@@ -1,0 +1,47 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables / secrets
+.env
+*.env
+
+# Dependency directories
+node_modules/
+venv/
+.envrc
+
+# Python
+__pycache__/
+*.pyc
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+
+# Coverage / testing
+.coverage
+coverage/
+.pytest_cache/
+
+# Others
+*.tmp
+*.bak
+
+# Claude Code files
+.claude/
+CLAUDE.md
