@@ -13,4 +13,5 @@ dependencies = [
     "langchain-google-community>=3.0.1",
     "langchain-google-genai>=3.2.0",
     "python-dotenv>=1.2.1",
+    "unstructured>=0.18.21",
 ]
