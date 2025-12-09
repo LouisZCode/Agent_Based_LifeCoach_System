@@ -5,6 +5,7 @@ To edit prompts, check the prompts.yaml document
 
 from functions import read_folder, read_template
 from langchain.agents import create_agent
+from langgraph.checkpoint.memory import InMemorySaver
 import yaml
 from dotenv import load_dotenv
 import os
@@ -23,7 +24,8 @@ session_agent_prompt = prompts["session_agent_prompt"]
 session_agent = create_agent(
     system_prompt=session_agent_prompt,
     model="anthropic:claude-haiku-4-5",
-    tools=[read_folder, read_template]
+    tools=[read_folder, read_template],
+    checkpointer=InMemorySaver()
 )
 """
 discovery_agent = create_agent(

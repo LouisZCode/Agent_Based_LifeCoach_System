@@ -94,6 +94,23 @@ def save_generated_document(content: str, path: str, filename: str) -> str:
     return full_path
 
 
+def get_or_create_session_folder(client_name: str, session_date) -> str:
+    """Get existing session folder from state or create new one"""
+    # Reset if client or date changed
+    if (st.session_state.current_active_client != client_name or
+        st.session_state.get("current_session_date") != session_date):
+        st.session_state.current_session_folder = None
+        st.session_state.current_active_client = client_name
+        st.session_state.current_session_date = session_date
+
+    # Calculate new session folder if needed
+    if st.session_state.current_session_folder is None:
+        session_num = get_next_session_number(client_name)
+        st.session_state.current_session_folder = f"Session_{session_num}_{session_date.strftime('%d-%m-%Y')}"
+
+    return st.session_state.current_session_folder
+
+
 def strip_context_tags(text: str) -> str:
     """Remove context tags like [Client: X] [Session: Y] from display text"""
     import re
@@ -107,11 +124,20 @@ def strip_context_tags(text: str) -> str:
 
 def invoke_agent(agent, messages: list) -> str:
     """Invoke an agent with the conversation history and return response"""
-    from langchain_core.messages import AIMessage
+    from langchain_core.messages import AIMessage, HumanMessage
 
-    response = agent.invoke({
-        "messages": messages
-    })
+    # Convert dict messages to LangChain message objects
+    lc_messages = []
+    for msg in messages:
+        if msg["role"] == "user":
+            lc_messages.append(HumanMessage(content=msg["content"]))
+        elif msg["role"] == "assistant":
+            lc_messages.append(AIMessage(content=msg["content"]))
+
+    response = agent.invoke(
+        {"messages": lc_messages},
+        {"configurable": {"thread_id": "001"}}
+    )
 
     # Handle LangChain message response format
     if isinstance(response, dict):
@@ -155,6 +181,10 @@ if "messages_active" not in st.session_state:
     st.session_state.messages_active = []
 if "session_documents" not in st.session_state:
     st.session_state.session_documents = {}
+if "current_session_folder" not in st.session_state:
+    st.session_state.current_session_folder = None
+if "current_active_client" not in st.session_state:
+    st.session_state.current_active_client = None
 
 # Tab 3: Chat Assistant
 if "messages_chat" not in st.session_state:
@@ -341,8 +371,8 @@ with tab2:
         )
 
     if selected_client:
-        session_num = get_next_session_number(selected_client)
-        st.caption(f"Next session: Session {session_num}")
+        session_folder = get_or_create_session_folder(selected_client, session_date)
+        st.caption(f"Current session: {session_folder}")
 
         st.divider()
 
@@ -386,7 +416,16 @@ with tab2:
         if uploaded_file:
             file_content = read_uploaded_file(uploaded_file)
             if file_content:
-                st.success(f"Transcription '{uploaded_file.name}' uploaded successfully!")
+                # Save transcription to client's session folder
+                session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
+                os.makedirs(session_path, exist_ok=True)
+
+                transcription_path = os.path.join(session_path, "transcription.txt")
+                with open(transcription_path, 'w', encoding='utf-8') as f:
+                    f.write(file_content)
+
+                st.success(f"Transcription saved to: {selected_client}/{session_folder}/transcription.txt")
+
                 file_message = f"[Session transcription: {uploaded_file.name}]\n\n{file_content}"
                 if not any(file_message in m.get("content", "") for m in st.session_state.messages_active):
                     st.session_state.messages_active.append({
@@ -399,7 +438,6 @@ with tab2:
             "Type your session notes or instructions...",
             key="active_chat_input"
         ):
-            session_folder = f"Session_{session_num}_{session_date.strftime('%Y%m%d')}"
             full_prompt = f"[Client: {selected_client}] [Session: {session_folder}]\n{prompt}"
 
             st.session_state.messages_active.append({
@@ -497,6 +535,8 @@ with st.sidebar:
     if st.button("Clear Active Chat", key="clear_active"):
         st.session_state.messages_active = []
         st.session_state.session_documents = {}
+        st.session_state.current_session_folder = None
+        st.session_state.current_active_client = None
         st.rerun()
 
     if st.button("Clear Assistant Chat", key="clear_chat"):
