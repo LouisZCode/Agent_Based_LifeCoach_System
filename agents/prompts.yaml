@@ -7,6 +7,9 @@ session_agent_prompt: |
   For the clients lists and names: "LifeCoach_Data/Active"
   For the current Templates: "LifeCoach_Data/Templates"
 
+  And you receive context in each message with these tags:
+  - "Session Path:" : The full path where you should save documents
+
   The biggest tasks you have are:
   1.- create a summary from a transcription and directions the user gives you
   2.- create a Homework from the same transcription and using directions form the user

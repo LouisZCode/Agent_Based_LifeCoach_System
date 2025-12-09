@@ -114,9 +114,10 @@ def get_or_create_session_folder(client_name: str, session_date) -> str:
 def strip_context_tags(text: str) -> str:
     """Remove context tags like [Client: X] [Session: Y] from display text"""
     import re
-    # Remove patterns like [Client: ...] [Session: ...] [Uploaded file: ...]
+    # Remove patterns like [Client: ...] [Session: ...] [Session Path: ...] [Uploaded file: ...]
     cleaned = re.sub(r'\[Client:[^\]]*\]\s*', '', text)
     cleaned = re.sub(r'\[Session:[^\]]*\]\s*', '', cleaned)
+    cleaned = re.sub(r'\[Session Path:[^\]]*\]\s*', '', cleaned)
     cleaned = re.sub(r'\[Uploaded file:[^\]]*\]\s*', '', cleaned)
     cleaned = re.sub(r'\[Session transcription:[^\]]*\]\s*', '', cleaned)
     return cleaned.strip()
@@ -438,7 +439,8 @@ with tab2:
             "Type your session notes or instructions...",
             key="active_chat_input"
         ):
-            full_prompt = f"[Client: {selected_client}] [Session: {session_folder}]\n{prompt}"
+            session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
+            full_prompt = f"[Client: {selected_client}] [Session: {session_folder}] [Session Path: {session_path}]\n{prompt}"
 
             st.session_state.messages_active.append({
                 "role": "user",

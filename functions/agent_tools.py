@@ -65,7 +65,7 @@ def read_template(path : str, template_name : str) -> str:
     return text
 
 @tool
-def create_summary(path: str):
+def save_summary(path: str):
     """
     Read the folder as a list of the names on 1 level.
     """
