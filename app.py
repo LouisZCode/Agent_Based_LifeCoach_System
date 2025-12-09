@@ -3,6 +3,10 @@ Life Coach AI Assistant - Streamlit Application
 A multi-tab interface for managing coaching clients and sessions.
 """
 
+#run by writing:
+#   streamlit run /Users/luiszg/Desktop/GitHub/LifeCoach_AI_System/app.py
+
+
 import streamlit as st
 import os
 from datetime import datetime
@@ -11,9 +15,8 @@ from io import BytesIO
 # File parsing imports
 from docx import Document as DocxDocument
 import PyPDF2
-
 # Import agents (to be created by user)
-from agents import discovery_agent, session_agent, chat_agent
+from agents import session_agent
 
 # ============================================================================
 # CONFIGURATION
@@ -91,15 +94,47 @@ def save_generated_document(content: str, path: str, filename: str) -> str:
     return full_path
 
 
+def strip_context_tags(text: str) -> str:
+    """Remove context tags like [Client: X] [Session: Y] from display text"""
+    import re
+    # Remove patterns like [Client: ...] [Session: ...] [Uploaded file: ...]
+    cleaned = re.sub(r'\[Client:[^\]]*\]\s*', '', text)
+    cleaned = re.sub(r'\[Session:[^\]]*\]\s*', '', cleaned)
+    cleaned = re.sub(r'\[Uploaded file:[^\]]*\]\s*', '', cleaned)
+    cleaned = re.sub(r'\[Session transcription:[^\]]*\]\s*', '', cleaned)
+    return cleaned.strip()
+
+
 def invoke_agent(agent, messages: list) -> str:
     """Invoke an agent with the conversation history and return response"""
+    from langchain_core.messages import AIMessage
+
     response = agent.invoke({
         "messages": messages
     })
 
-    # Handle different response formats
+    # Handle LangChain message response format
     if isinstance(response, dict):
-        return response.get("output", response.get("content", str(response)))
+        # Check for 'messages' key with list of message objects
+        if "messages" in response and isinstance(response["messages"], list):
+            # Find the last AIMessage in the list
+            for msg in reversed(response["messages"]):
+                if isinstance(msg, AIMessage):
+                    return msg.content
+                # Also handle dict format
+                if isinstance(msg, dict) and msg.get("role") == "assistant":
+                    return msg.get("content", "")
+
+        # Fallback to other common keys
+        if "output" in response:
+            return response["output"]
+        if "content" in response:
+            return response["content"]
+
+    # Handle direct AIMessage response
+    if isinstance(response, AIMessage):
+        return response.content
+
     return str(response)
 
 
@@ -207,7 +242,8 @@ with tab1:
     with chat_container:
         for message in st.session_state.messages_undefined:
             with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+                display_text = strip_context_tags(message["content"]) if message["role"] == "user" else message["content"]
+                st.markdown(display_text)
 
     # Download button for discovery prep
     if st.session_state.discovery_prep_content:
@@ -315,7 +351,8 @@ with tab2:
         with chat_container:
             for message in st.session_state.messages_active:
                 with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+                    display_text = strip_context_tags(message["content"]) if message["role"] == "user" else message["content"]
+                    st.markdown(display_text)
 
         # Download buttons for generated documents
         if st.session_state.session_documents:
@@ -408,7 +445,8 @@ with tab3:
     with chat_container:
         for message in st.session_state.messages_chat:
             with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+                display_text = strip_context_tags(message["content"]) if message["role"] == "user" else message["content"]
+                st.markdown(display_text)
 
     # Simple chat input (no file upload)
     if prompt := st.chat_input(
