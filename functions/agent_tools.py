@@ -2,8 +2,8 @@
 Here you will find the tools given to the Agent, specially to read and write
 in the Local Files.
 """
-from sqlalchemy.sql.coercions import TruncatedLabelImpl
-from config import TEMPLATES_PATH, ACTIVE_CLIENTS_PATH
+
+
 from langchain.tools import tool
 from pathlib import Path
 from docx import Document
@@ -64,19 +64,77 @@ def read_template(path : str, template_name : str) -> str:
 
     return text
 
-@tool
+@tool(
+    "save_summary",
+    parse_docstring=True,
+    description="saves the summary of the transcription and user notes in the correct Session Path"
+)
 def save_summary(path: str, content : str) -> str:
     """
-    saves the created summary in the current Session Path.
+    Description:
+        saves the created summary in the current Session Path.
+
+    Args:
+        path (str): The current Session Path given in the context
+        content (str): The summary created following the summary_template guidelines
+
+    Returns:
+        Confirmation that the summary has been saved in the Session Path
+
+    Raises:
+        Error is the path is incorrect of was an issue while saving.
     """
     file_path = Path(f"{path}/summary.txt")
     file_path.write_text(content)
 
     return f"new summary created in {file_path}"
 
-@tool
-def create_homework(path: str):
+@tool(
+    "save_homework",
+    parse_docstring=True,
+    description="saves the homework aligned with the transcription and user notes in the correct Session Path"
+)
+def save_homework(path: str, content : str) -> str:
     """
-    Read the folder as a list of the names on 1 level.
+    Description:
+        saves the created homework in the current Session Path.
+
+    Args:
+        path (str): The current Session Path given in the context
+        content (str): The homework created following the homework_template guidelines
+
+    Returns:
+        Confirmation that the homework has been saved in the Session Path
+
+    Raises:
+        Error is the path is incorrect of was an issue while saving.
     """
-    pass
+    file_path = Path(f"{path}/homework.txt")
+    file_path.write_text(content)
+
+    return f"new homework created in {file_path}"
+
+@tool(
+    "save_next_session_draft",
+    parse_docstring=True,
+    description="saves the next session draft aligned with the transcription and user notes in the correct Session Path"
+)
+def save_session_draft(path: str, content : str) -> str:
+    """
+    Description:
+        saves the created next session draft in the current Session Path.
+
+    Args:
+        path (str): The current Session Path given in the context
+        content (str): The session draft created following the next_session_template guidelines
+
+    Returns:
+        Confirmation that the session draft has been saved in the Session Path
+
+    Raises:
+        Error is the path is incorrect of was an issue while saving.
+    """
+    file_path = Path(f"{path}/next_session.txt")
+    file_path.write_text(content)
+
+    return f"new next sesison draft created in {file_path}"
