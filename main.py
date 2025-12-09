@@ -10,7 +10,7 @@ from agents import session_agent
 
 response = session_agent.invoke({
     "role": "user",
-    "messages": "Can you read the current homework template and tell me what we need to fill it?"
+    "messages": "Can you read the current homework template and tell me what we need to fill it? directly call the template tool"
 })
 
 for i, m in enumerate(response["messages"]):

@@ -22,7 +22,7 @@ session_agent_prompt = prompts["session_agent_prompt"]
 
 session_agent = create_agent(
     system_prompt=session_agent_prompt,
-    model="google_genai:gemini-2.5-flash",
+    model="anthropic:claude-haiku-4-5",
     tools=[read_folder, read_template]
 )
 """
