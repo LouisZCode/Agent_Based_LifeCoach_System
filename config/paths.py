@@ -7,3 +7,6 @@ ACTIVE_CLIENTS_PATH="LifeCoach_Data/Active"
 INACTIVE_CLIENTS_PATH="LifeCoach_Data/Inactive"
 TEMPLATES_PATH="LifeCoach_Data/Templates"
 UNDEFINED_CLIENTS_PATH="LifeCoach_Data/Undefined"
+
+# Parakeet-MLX model for audio transcription
+MODEL_PATH="model/nvidia_parakeet-v3_494MB"

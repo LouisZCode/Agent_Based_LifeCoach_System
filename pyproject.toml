@@ -19,4 +19,5 @@ dependencies = [
     "PyPDF2>=3.0.0",
     "langchain-anthropic>=1.2.0",
     "langchain-openai>=1.1.1",
+    "parakeet-mlx>=0.4.1",
 ]

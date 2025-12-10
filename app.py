@@ -24,9 +24,152 @@ from agents import session_agent
 
 st.set_page_config(
     page_title="Life Coach AI Assistant",
-    page_icon="🧘",
+    page_icon="🌿",
     layout="wide"
 )
+
+# Placeholder for Brand Logo
+# Replace 'path/to/logo.png' with the actual file path when available
+# st.logo("branding_docs/logo.png", link="https://your-website.com")
+
+def apply_custom_styling():
+    """Inject custom CSS for Premium Branding"""
+    st.markdown("""
+        <style>
+        /* Import Font (Optional - relying on system fonts for now, but can import Google Fonts) */
+        
+        /* Dual Typography: Sans-Serif for Headers */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Helvetica', 'Arial', sans-serif !important;
+            color: #2E3B1F !important; /* Deep Brand Green */
+        }
+        
+        /* Dual Typography: Serif for Body */
+        .stApp, .stMarkdown, p, div {
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }
+
+        /* Card-Style Containers */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            background-color: #FAF9F6;
+            border: 1px solid #A0522D; /* Terracotta border */
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* Button Styling - Terracotta */
+        div.stButton > button:first-child {
+            background-color: #A0522D;
+            color: white;
+            border-radius: 8px;
+            border: none;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-weight: bold;
+        }
+        div.stButton > button:hover {
+            background-color: #8a4524;
+            color: white;
+        }
+
+        /* Sidebar Styling - Text Color Overrides for Dark Background */
+        [data-testid="stSidebar"] * {
+            color: #F4F1EA !important;
+        }
+        
+        /* Sidebar Title Specifics - Reinforcing, though the wildcard above covers it */
+        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+            color: #F4F1EA !important;
+        }
+
+        /* Sidebar Metric Values (Big Numbers) */
+        [data-testid="stSidebar"] [data-testid="stMetricValue"] {
+            color: #F4F1EA !important;
+        }
+
+        /* Input Fields in Sidebar - Light background for readability, reset text to dark for inside inputs */
+        [data-testid="stSidebar"] input {
+            background-color: #F4F1EA !important;
+            color: #2C2C2C !important;
+        }
+        
+        /* FIX: Reset Widget Backgrounds to Light for Contrast */
+        
+        /* Text Input (Client Name) */
+        div[data-testid="stTextInput"] div[data-baseweb="input"] {
+            background-color: #FAF9F6 !important;
+            border: 1px solid #4A5D23 !important;
+        }
+        /* Crucial Fix: Force the input element itself to be light */
+        div[data-testid="stTextInput"] input {
+            background-color: #FAF9F6 !important;
+            color: #2C2C2C !important;
+        }
+
+        /* Selectbox (Select Client) - Targeting the inner container */
+        div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+            background-color: #FAF9F6 !important;
+            border: 1px solid #4A5D23 !important;
+            color: #2C2C2C !important;
+        }
+        /* Ensure the text inside the selectbox is dark */
+        div[data-testid="stSelectbox"] div[data-testid="stMarkdownContainer"] p {
+            color: #2C2C2C !important;
+        }
+        
+        /* Date Input Box */
+        div[data-testid="stDateInput"] div[data-baseweb="input"] {
+            background-color: #FAF9F6 !important;
+            border: 1px solid #4A5D23 !important;
+        }
+        div[data-testid="stDateInput"] input {
+            color: #2C2C2C !important;
+        }
+
+        /* File Uploader Dropzone */
+        div[data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] {
+            background-color: #FAF9F6 !important;
+            color: #2C2C2C !important;
+            border: 1px dashed #4A5D23 !important;
+        }
+        div[data-testid="stFileUploader"] div, div[data-testid="stFileUploader"] small {
+            color: #2C2C2C !important;
+        }
+        /* Icon color in file uploader */
+        div[data-testid="stFileUploader"] svg {
+            fill: #4A5D23 !important;
+        }
+
+        /* Chat Input Styling - Force Light Background */
+        div[data-testid="stChatInput"] {
+            background-color: #FAF9F6 !important;
+            border-color: #4A5D23 !important;
+        }
+        div[data-testid="stChatInput"] textarea {
+            background-color: #FAF9F6 !important;
+            color: #2C2C2C !important;
+            caret-color: #A0522D !important; /* Terracotta cursor */
+        }
+        div[data-testid="stChatInput"] button {
+            color: #4A5D23 !important; /* Send button color */
+        }
+
+        /* General override for labels above widgets if they aren't catching the header rule */
+        .stMarkdown label p {
+            color: #2C2C2C !important; /* Keep labels dark on the main light background */
+        }
+        
+        /* Chat Message Styling */
+        .stChatMessage {
+            background-color: white;
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid #E0E0E0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+apply_custom_styling()
 
 DATA_PATH = "LifeCoach_Data"
 ACTIVE_PATH = os.path.join(DATA_PATH, "Active")
@@ -374,39 +517,7 @@ with tab2:
         session_folder = get_or_create_session_folder(selected_client, session_date)
         st.caption(f"Current session: {session_folder}")
 
-        st.divider()
-
-        # Chat messages display
-        chat_container = st.container(height=400)
-        with chat_container:
-            for message in st.session_state.messages_active:
-                with st.chat_message(message["role"]):
-                    display_text = strip_context_tags(message["content"]) if message["role"] == "user" else message["content"]
-                    st.markdown(display_text)
-
-        # Download buttons for generated documents
-        if st.session_state.session_documents:
-            st.subheader("Generated Documents")
-            doc_cols = st.columns(3)
-
-            doc_mapping = {
-                "summary": ("📄 Summary", "summary.txt"),
-                "homework": ("📝 Homework", "homework.txt"),
-                "next_prep": ("🔮 Next Session Prep", "next_session_prep.txt")
-            }
-
-            for idx, (key, (label, filename)) in enumerate(doc_mapping.items()):
-                if key in st.session_state.session_documents:
-                    with doc_cols[idx]:
-                        st.download_button(
-                            label=label,
-                            data=st.session_state.session_documents[key],
-                            file_name=filename,
-                            mime="text/plain",
-                            key=f"download_{key}"
-                        )
-
-        # File upload for transcription
+        # File upload for transcription (moved here, before chat)
         uploaded_file = st.file_uploader(
             "Upload session transcription",
             type=['txt', 'docx', 'pdf'],
@@ -432,6 +543,16 @@ with tab2:
                         "role": "user",
                         "content": file_message
                     })
+
+        st.divider()
+
+        # Chat messages display
+        chat_container = st.container(height=400)
+        with chat_container:
+            for message in st.session_state.messages_active:
+                with st.chat_message(message["role"]):
+                    display_text = strip_context_tags(message["content"]) if message["role"] == "user" else message["content"]
+                    st.markdown(display_text)
 
         # Chat input
         if prompt := st.chat_input(
@@ -460,13 +581,35 @@ with tab2:
                 session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
                 for key, filename in [("summary", "summary.txt"),
                                        ("homework", "homework.txt"),
-                                       ("next_prep", "next_session_prep.txt")]:
+                                       ("next_prep", "next_session.txt")]:
                     doc_path = os.path.join(session_path, filename)
                     if os.path.exists(doc_path):
                         with open(doc_path, 'r', encoding='utf-8') as f:
                             st.session_state.session_documents[key] = f.read()
 
             st.rerun()
+
+        # Generated documents with preview and download (below chat input)
+        if st.session_state.session_documents:
+            st.subheader("Generated Documents")
+
+            doc_mapping = {
+                "summary": ("📄 Summary", "summary.txt"),
+                "homework": ("📝 Homework", "homework.txt"),
+                "next_prep": ("🔮 Next Session", "next_session.txt")
+            }
+
+            for key, (label, filename) in doc_mapping.items():
+                if key in st.session_state.session_documents:
+                    with st.expander(f"{label} - Preview & Download"):
+                        st.text(st.session_state.session_documents[key])
+                        st.download_button(
+                            label=f"Download {label}",
+                            data=st.session_state.session_documents[key],
+                            file_name=filename,
+                            mime="text/plain",
+                            key=f"download_{key}"
+                        )
 
 
 # ============================================================================
@@ -515,7 +658,8 @@ with tab3:
 # ============================================================================
 
 with st.sidebar:
-    st.header("🧘 Life Coach AI")
+    st.header("🌿 Life Coach AI")
+    st.markdown("<h3 style='font-family: serif; font-style: italic; color: #F4F1EA;'>Your Path, Your Power</h3>", unsafe_allow_html=True)
     st.divider()
 
     st.subheader("Quick Stats")
