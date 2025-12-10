@@ -4,7 +4,7 @@ A multi-tab interface for managing coaching clients and sessions.
 """
 
 #run by writing:
-#   streamlit run /Users/luiszg/Desktop/GitHub/LifeCoach_AI_System/app.py
+#   streamlit run app.py
 
 
 import streamlit as st
@@ -15,8 +15,20 @@ from io import BytesIO
 # File parsing imports
 from docx import Document as DocxDocument
 import PyPDF2
+from pathlib import Path
+
 # Import agents (to be created by user)
 from agents import session_agent
+
+# Import transcription functions
+from functions import (
+    transcribe_audio,
+    save_transcription,
+    is_model_cached,
+    is_diarization_available,
+    is_diarization_model_cached,
+    transcribe_with_diarization,
+)
 
 # ============================================================================
 # CONFIGURATION
@@ -166,6 +178,15 @@ def apply_custom_styling():
             padding: 10px;
             border: 1px solid #E0E0E0;
         }
+
+        /* Text Area Styling - Light Background */
+        div[data-testid="stTextArea"] textarea {
+            background-color: #FAF9F6 !important;
+            color: #2C2C2C !important;
+        }
+        div[data-testid="stTextArea"] div[data-baseweb="textarea"] {
+            background-color: #FAF9F6 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -209,12 +230,91 @@ def read_uploaded_file(uploaded_file) -> str:
     return ""
 
 
+def sanitize_client_name(name: str) -> str:
+    """
+    Sanitize client name for use as folder name.
+    Replaces spaces with underscores and removes special characters.
+
+    Example: "Pedro Perez" -> "Pedro_Perez"
+    """
+    if not name:
+        return name
+    # Replace spaces with underscores
+    sanitized = name.strip().replace(" ", "_")
+    # Remove any characters that aren't alphanumeric, underscore, or hyphen
+    sanitized = "".join(c for c in sanitized if c.isalnum() or c in "_-")
+    return sanitized
+
+
 def get_active_clients() -> list:
     """Get list of active client folders"""
     if not os.path.exists(ACTIVE_PATH):
         return []
     return [d for d in os.listdir(ACTIVE_PATH)
             if os.path.isdir(os.path.join(ACTIVE_PATH, d))]
+
+
+def get_undefined_clients() -> list:
+    """Get list of undefined client folders"""
+    if not os.path.exists(UNDEFINED_PATH):
+        return []
+    return [d for d in os.listdir(UNDEFINED_PATH)
+            if os.path.isdir(os.path.join(UNDEFINED_PATH, d))]
+
+
+def get_next_session_number_for_path(client_name: str, base_path: str) -> int:
+    """Get the next session number for a client in a specific path"""
+    client_path = os.path.join(base_path, client_name)
+    if not os.path.exists(client_path):
+        return 1
+    session_folders = [d for d in os.listdir(client_path)
+                       if d.startswith("Session_")]
+    return len(session_folders) + 1
+
+
+def create_session_folder_for_transcription(client_name: str, client_type: str, session_date) -> tuple:
+    """
+    Create session folder based on client type.
+
+    Undefined clients: Always Session_1 (first session for new clients)
+    Active clients: Session_N+1 (next sequential number)
+
+    Returns:
+        tuple: (full_path, folder_name, sanitized_client_name)
+    """
+    # Sanitize client name for folder creation
+    safe_client_name = sanitize_client_name(client_name)
+
+    if client_type == "Undefined":
+        base_path = UNDEFINED_PATH
+        session_num = get_next_session_number_for_path(safe_client_name, base_path)
+    else:  # Active
+        base_path = ACTIVE_PATH
+        session_num = get_next_session_number_for_path(safe_client_name, base_path)
+
+    folder_name = f"Session_{session_num}_{session_date.strftime('%d-%m-%Y')}"
+    full_path = os.path.join(base_path, safe_client_name, folder_name)
+    os.makedirs(full_path, exist_ok=True)
+
+    return full_path, folder_name, safe_client_name
+
+
+def save_audio_file(session_path: str, uploaded_file) -> str:
+    """
+    Save original audio file to session folder.
+
+    Returns:
+        str: Path to saved audio file
+    """
+    original_name = Path(uploaded_file.name).stem
+    extension = Path(uploaded_file.name).suffix
+    audio_filename = f"audio_{original_name}{extension}"
+    audio_path = os.path.join(session_path, audio_filename)
+
+    with open(audio_path, 'wb') as f:
+        f.write(uploaded_file.getbuffer())
+
+    return audio_path
 
 
 def get_next_session_number(client_name: str) -> int:
@@ -311,7 +411,15 @@ def invoke_agent(agent, messages: list) -> str:
 # SESSION STATE INITIALIZATION
 # ============================================================================
 
-# Tab 1: Undefined Clients
+# Tab 1: Transcribe Audio
+if "transcription_result" not in st.session_state:
+    st.session_state.transcription_result = None
+if "transcription_session_path" not in st.session_state:
+    st.session_state.transcription_session_path = None
+if "transcription_session_folder" not in st.session_state:
+    st.session_state.transcription_session_folder = None
+
+# Tab 2: Undefined Clients
 if "messages_undefined" not in st.session_state:
     st.session_state.messages_undefined = []
 if "current_undefined_client" not in st.session_state:
@@ -319,7 +427,7 @@ if "current_undefined_client" not in st.session_state:
 if "discovery_prep_content" not in st.session_state:
     st.session_state.discovery_prep_content = None
 
-# Tab 2: Active Clients
+# Tab 3: Active Clients
 if "messages_active" not in st.session_state:
     st.session_state.messages_active = []
 if "session_documents" not in st.session_state:
@@ -329,7 +437,7 @@ if "current_session_folder" not in st.session_state:
 if "current_active_client" not in st.session_state:
     st.session_state.current_active_client = None
 
-# Tab 3: Chat Assistant
+# Tab 4: Chat Assistant
 if "messages_chat" not in st.session_state:
     st.session_state.messages_chat = []
 
@@ -340,7 +448,8 @@ if "messages_chat" not in st.session_state:
 
 st.title("🧘 Life Coach AI Assistant")
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🎙️ Transcribe Audio",
     "📋 Undefined Clients",
     "✅ Active Clients",
     "💬 Chat Assistant"
@@ -348,10 +457,228 @@ tab1, tab2, tab3 = st.tabs([
 
 
 # ============================================================================
-# TAB 1: UNDEFINED CLIENTS
+# TAB 1: TRANSCRIBE AUDIO
 # ============================================================================
 
 with tab1:
+    st.header("Audio Transcription")
+    st.caption("Transcribe session recordings and create session folders")
+
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        # Client type selector
+        client_type = st.radio(
+            "Client Type",
+            options=["Undefined", "Active"],
+            horizontal=True,
+            key="transcribe_client_type"
+        )
+
+    with col2:
+        # Date picker
+        transcribe_date = st.date_input(
+            "Session Date",
+            value=datetime.today(),
+            key="transcribe_date"
+        )
+
+    # Client selection based on type
+    if client_type == "Undefined":
+        undefined_clients = get_undefined_clients()
+        col_select, col_new = st.columns([1, 1])
+
+        with col_select:
+            if undefined_clients:
+                selected_existing = st.selectbox(
+                    "Select Existing Client",
+                    options=["-- Create New --"] + undefined_clients,
+                    key="undefined_client_select"
+                )
+            else:
+                selected_existing = "-- Create New --"
+                st.info("No existing undefined clients. Enter a new name below.")
+
+        with col_new:
+            new_client_name = st.text_input(
+                "Or Enter New Client Name",
+                placeholder="Enter new client name...",
+                key="new_undefined_client_name"
+            )
+
+        # Determine final client name
+        if new_client_name:
+            final_client_name = new_client_name
+        elif selected_existing and selected_existing != "-- Create New --":
+            final_client_name = selected_existing
+        else:
+            final_client_name = None
+
+    else:  # Active
+        active_clients = get_active_clients()
+        if active_clients:
+            final_client_name = st.selectbox(
+                "Select Active Client",
+                options=active_clients,
+                key="active_client_select_transcribe"
+            )
+        else:
+            st.warning("No active clients found. Please add clients from the Undefined Clients tab first.")
+            final_client_name = None
+
+    st.divider()
+
+    # Speaker diarization option
+    diarization_available = is_diarization_available()
+
+    diarization_col1, diarization_col2 = st.columns([1, 3])
+
+    with diarization_col1:
+        enable_diarization = st.checkbox(
+            "Identify Speakers",
+            value=False,
+            disabled=not diarization_available,
+            key="enable_diarization",
+            help="Use Pyannote to identify different speakers in the recording"
+        )
+
+    with diarization_col2:
+        if not diarization_available:
+            st.caption("⚠️ Speaker identification unavailable. Set `HUGGINGFACE_TOKEN` in .env file and install `pyannote.audio`.")
+        elif enable_diarization and not is_diarization_model_cached():
+            st.caption("📥 First use will download the diarization model (~200MB)")
+        elif enable_diarization:
+            st.caption("✓ Speaker identification enabled")
+
+    # Audio file uploader
+    audio_file = st.file_uploader(
+        "Upload Audio File",
+        type=['mp3', 'wav', 'm4a', 'flac'],
+        key="audio_file_upload"
+    )
+
+    if audio_file:
+        st.audio(audio_file)
+        st.caption(f"File: {audio_file.name} ({audio_file.size / 1024 / 1024:.2f} MB)")
+
+    # Transcribe button
+    transcribe_col1, transcribe_col2 = st.columns([1, 3])
+
+    with transcribe_col1:
+        transcribe_button = st.button(
+            "🎙️ Transcribe",
+            type="primary",
+            key="transcribe_button",
+            disabled=not (final_client_name and audio_file)
+        )
+
+    if transcribe_button and final_client_name and audio_file:
+        # Validation
+        if audio_file.size == 0:
+            st.error("The uploaded file appears to be empty.")
+        else:
+            # Check if models need to be downloaded
+            model_cached = is_model_cached()
+            diarization_model_cached = is_diarization_model_cached() if enable_diarization else True
+
+            try:
+                # Create session folder (returns sanitized client name)
+                session_path, session_folder, safe_client_name = create_session_folder_for_transcription(
+                    final_client_name,
+                    client_type,
+                    transcribe_date
+                )
+
+                # Save audio file
+                audio_path = save_audio_file(session_path, audio_file)
+
+                # Show appropriate message based on model cache status
+                if not model_cached:
+                    st.info("📥 First time setup: Downloading transcription model (~600MB). This only happens once...")
+
+                if enable_diarization and not diarization_model_cached:
+                    st.info("📥 Downloading speaker diarization model (~200MB). This only happens once...")
+
+                # Determine which transcription method to use
+                if enable_diarization:
+                    # Use diarization workflow
+                    with st.spinner("🎙️ Transcribing and identifying speakers..."):
+                        transcription_text, diarization_used = transcribe_with_diarization(audio_path)
+
+                    if diarization_used:
+                        st.success("✓ Speaker identification applied")
+                    else:
+                        st.warning("Speaker identification failed, using plain transcription")
+                else:
+                    # Standard transcription without diarization
+                    if not model_cached:
+                        with st.spinner("📥 Downloading model..."):
+                            transcription_text = transcribe_audio(audio_path)
+                    else:
+                        # Model is cached - use progress bar for transcription
+                        st.write("🎙️ Transcribing audio...")
+                        progress_bar = st.progress(0, text="Starting transcription...")
+
+                        def update_progress(progress: float):
+                            percent = int(progress * 100)
+                            progress_bar.progress(progress, text=f"Transcribing... {percent}%")
+
+                        transcription_text = transcribe_audio(audio_path, progress_callback=update_progress)
+                        progress_bar.progress(1.0, text="Transcription complete!")
+
+                # Save transcription
+                save_transcription(session_path, transcription_text)
+
+                # Store in session state
+                st.session_state.transcription_result = transcription_text
+                st.session_state.transcription_session_path = session_path
+                st.session_state.transcription_session_folder = session_folder
+
+                st.success(f"Transcription complete! Saved to: {safe_client_name}/{session_folder}/")
+
+            except FileNotFoundError as e:
+                st.error(f"File error: {str(e)}")
+            except ValueError as e:
+                st.error(f"Invalid file: {str(e)}")
+            except RuntimeError as e:
+                st.error(f"Transcription failed: {str(e)}")
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {str(e)}")
+
+    # Display transcription result
+    if st.session_state.transcription_result:
+        st.divider()
+        st.subheader("Transcription Result")
+
+        if st.session_state.transcription_session_folder:
+            st.caption(f"Session: {st.session_state.transcription_session_folder}")
+
+        # Display in text area
+        st.text_area(
+            "Transcription",
+            value=st.session_state.transcription_result,
+            height=300,
+            key="transcription_display",
+            disabled=True
+        )
+
+        # Download button
+        st.download_button(
+            label="📥 Download Transcription",
+            data=st.session_state.transcription_result,
+            file_name="transcription.txt",
+            mime="text/plain",
+            key="download_transcription"
+        )
+
+    # Clear button in sidebar will handle clearing transcription state
+
+
+# ============================================================================
+# TAB 2: UNDEFINED CLIENTS
+# ============================================================================
+
+with tab2:
     st.header("New Client Discovery")
 
     col1, col2 = st.columns([2, 1])
@@ -486,10 +813,10 @@ with tab1:
 
 
 # ============================================================================
-# TAB 2: ACTIVE CLIENTS
+# TAB 3: ACTIVE CLIENTS
 # ============================================================================
 
-with tab2:
+with tab3:
     st.header("Active Client Sessions")
 
     col1, col2 = st.columns([2, 1])
@@ -613,10 +940,10 @@ with tab2:
 
 
 # ============================================================================
-# TAB 3: CHAT ASSISTANT
+# TAB 4: CHAT ASSISTANT
 # ============================================================================
 
-with tab3:
+with tab4:
     st.header("Chat Assistant")
     st.caption("Ask about any client's progress, logs, or history (read-only)")
 
@@ -672,6 +999,12 @@ with st.sidebar:
     st.divider()
 
     st.subheader("Clear Conversations")
+    if st.button("Clear Transcription", key="clear_transcription"):
+        st.session_state.transcription_result = None
+        st.session_state.transcription_session_path = None
+        st.session_state.transcription_session_folder = None
+        st.rerun()
+
     if st.button("Clear Undefined Chat", key="clear_undefined"):
         st.session_state.messages_undefined = []
         st.session_state.discovery_prep_content = None
