@@ -262,6 +262,27 @@ def get_undefined_clients() -> list:
             if os.path.isdir(os.path.join(UNDEFINED_PATH, d))]
 
 
+def get_client_sessions(client_name: str) -> list:
+    """Get list of existing session folders for a client, sorted newest first."""
+    client_path = os.path.join(ACTIVE_PATH, client_name)
+    if not os.path.exists(client_path):
+        return []
+    sessions = [d for d in os.listdir(client_path)
+                if d.startswith("Session_") and os.path.isdir(os.path.join(client_path, d))]
+    # Sort by session number descending (newest first)
+    sessions.sort(key=lambda x: int(x.split('_')[1]), reverse=True)
+    return sessions
+
+
+def load_session_transcription(client_name: str, session_folder: str) -> str | None:
+    """Load transcription.txt from a session folder if it exists."""
+    transcription_path = os.path.join(ACTIVE_PATH, client_name, session_folder, "transcription.txt")
+    if os.path.exists(transcription_path):
+        with open(transcription_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    return None
+
+
 def get_next_session_number_for_path(client_name: str, base_path: str) -> int:
     """Get the next session number for a client in a specific path"""
     client_path = os.path.join(base_path, client_name)
@@ -436,6 +457,10 @@ if "current_session_folder" not in st.session_state:
     st.session_state.current_session_folder = None
 if "current_active_client" not in st.session_state:
     st.session_state.current_active_client = None
+if "loaded_transcription" not in st.session_state:
+    st.session_state.loaded_transcription = None
+if "transcription_added_to_chat" not in st.session_state:
+    st.session_state.transcription_added_to_chat = False
 
 # Tab 4: Chat Assistant
 if "messages_chat" not in st.session_state:
@@ -819,34 +844,94 @@ with tab2:
 with tab3:
     st.header("Active Client Sessions")
 
-    col1, col2 = st.columns([2, 1])
-
-    with col1:
-        active_clients = get_active_clients()
-        if active_clients:
-            selected_client = st.selectbox(
-                "Select Client",
-                options=active_clients,
-                key="active_client_select"
-            )
-        else:
-            st.info("No active clients found. Add clients from the Undefined tab.")
-            selected_client = None
-
-    with col2:
-        session_date = st.date_input(
-            "Session Date",
-            value=datetime.today(),
-            key="session_date"
+    # Row 1: Client selector
+    active_clients = get_active_clients()
+    if active_clients:
+        selected_client = st.selectbox(
+            "Select Client",
+            options=active_clients,
+            key="active_client_select"
         )
+    else:
+        st.info("No active clients found. Add clients from the Undefined tab.")
+        selected_client = None
 
     if selected_client:
-        session_folder = get_or_create_session_folder(selected_client, session_date)
-        st.caption(f"Current session: {session_folder}")
+        # Reset state if client changed
+        if st.session_state.current_active_client != selected_client:
+            st.session_state.current_active_client = selected_client
+            st.session_state.loaded_transcription = None
+            st.session_state.transcription_added_to_chat = False
+            st.session_state.current_session_folder = None
 
-        # File upload for transcription (moved here, before chat)
+        # Row 2: Session selection (existing vs new)
+        existing_sessions = get_client_sessions(selected_client)
+
+        session_options = ["+ Create New Session"] + existing_sessions
+        selected_option = st.selectbox(
+            "Select Session",
+            options=session_options,
+            key="session_select"
+        )
+
+        if selected_option == "+ Create New Session":
+            # Show date picker for new session
+            session_date = st.date_input(
+                "Session Date",
+                value=datetime.today(),
+                key="session_date"
+            )
+            session_folder = get_or_create_session_folder(selected_client, session_date)
+            st.caption(f"New session: {session_folder}")
+            is_new_session = True
+        else:
+            # Use existing session
+            session_folder = selected_option
+            st.caption(f"Selected session: {session_folder}")
+            is_new_session = False
+
+        # Reset transcription state if session changed
+        if st.session_state.current_session_folder != session_folder:
+            st.session_state.current_session_folder = session_folder
+            st.session_state.loaded_transcription = None
+            st.session_state.transcription_added_to_chat = False
+
+        # Auto-load transcription for existing sessions
+        session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
+
+        if not is_new_session and st.session_state.loaded_transcription is None:
+            transcription = load_session_transcription(selected_client, session_folder)
+            if transcription:
+                st.session_state.loaded_transcription = transcription
+
+        # Show transcription status and preview
+        if st.session_state.loaded_transcription:
+            st.success("Transcription loaded from session")
+            with st.expander("View Transcription", expanded=False):
+                st.text_area(
+                    "Transcription Content",
+                    value=st.session_state.loaded_transcription,
+                    height=200,
+                    disabled=True,
+                    key="transcription_preview"
+                )
+
+            # Add transcription to chat context if not already added
+            if not st.session_state.transcription_added_to_chat:
+                transcription_message = f"[Session transcription loaded]\n\n{st.session_state.loaded_transcription}"
+                if not any("[Session transcription" in m.get("content", "") for m in st.session_state.messages_active):
+                    st.session_state.messages_active.append({
+                        "role": "user",
+                        "content": transcription_message
+                    })
+                st.session_state.transcription_added_to_chat = True
+        elif not is_new_session:
+            st.info("No transcription found for this session")
+
+        # Optional: Upload a different transcription
+        st.divider()
         uploaded_file = st.file_uploader(
-            "Upload session transcription",
+            "Or upload a different transcription",
             type=['txt', 'docx', 'pdf'],
             key="active_file_upload"
         )
@@ -855,7 +940,6 @@ with tab3:
             file_content = read_uploaded_file(uploaded_file)
             if file_content:
                 # Save transcription to client's session folder
-                session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
                 os.makedirs(session_path, exist_ok=True)
 
                 transcription_path = os.path.join(session_path, "transcription.txt")
@@ -864,12 +948,17 @@ with tab3:
 
                 st.success(f"Transcription saved to: {selected_client}/{session_folder}/transcription.txt")
 
+                # Update loaded transcription
+                st.session_state.loaded_transcription = file_content
+
+                # Add to chat context
                 file_message = f"[Session transcription: {uploaded_file.name}]\n\n{file_content}"
                 if not any(file_message in m.get("content", "") for m in st.session_state.messages_active):
                     st.session_state.messages_active.append({
                         "role": "user",
                         "content": file_message
                     })
+                st.session_state.transcription_added_to_chat = True
 
         st.divider()
 
