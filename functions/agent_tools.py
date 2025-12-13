@@ -85,7 +85,7 @@ def save_summary(path: str, content : str) -> str:
         Error is the path is incorrect of was an issue while saving.
     """
     file_path = Path(f"{path}/summary.txt")
-    file_path.write_text(content)
+    file_path.write_text(content, encoding="utf-8")
 
     return f"new summary created in {file_path}"
 
@@ -110,7 +110,7 @@ def save_homework(path: str, content : str) -> str:
         Error is the path is incorrect of was an issue while saving.
     """
     file_path = Path(f"{path}/homework.txt")
-    file_path.write_text(content)
+    file_path.write_text(content, encoding="utf-8")
 
     return f"new homework created in {file_path}"
 
@@ -135,6 +135,6 @@ def save_session_draft(path: str, content : str) -> str:
         Error is the path is incorrect of was an issue while saving.
     """
     file_path = Path(f"{path}/next_session.txt")
-    file_path.write_text(content)
+    file_path.write_text(content, encoding="utf-8")
 
     return f"new next sesison draft created in {file_path}"
