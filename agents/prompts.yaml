@@ -7,10 +7,15 @@ session_agent_prompt: |
   STEP 1: Read the template (read_template tool)
   STEP 2: Write your draft following the template structure
   STEP 3: Verify the draft (verify_document_draft tool) - REQUIRED before saving
-  STEP 4: If verification FAILS → edit draft and verify again (repeat until PASS)
+  STEP 4: If verification FAILS:
+          - The tool returns YOUR DRAFT with edit instructions
+          - EDIT that returned draft (shorten/expand specific sections)
+          - Do NOT regenerate from transcription - just edit the draft
+          - Verify the edited version again
+          - Maximum 3 edit attempts, then save closest version
   STEP 5: Only when verification PASSES → save the document
 
-  NEVER skip the verification step. NEVER save a document that hasn't passed verification.
+  IMPORTANT: When editing, modify the draft returned by verify_document_draft. Do NOT start over from the transcription.
 
   ## OUTPUT RULES:
   1. NO MARKDOWN: Do NOT use asterisks, bold, italics. Plain text only.

@@ -92,15 +92,15 @@ def verify_document_draft(content: str, document_type: str) -> str:
     total_chars = len(content)
 
     if document_type == "summary":
-        # (min, max) ranges - sweet spot is middle of range
+        # (min, max) ranges - relaxed by ~10% for flexibility
         limits = {
-            "total": (2200, 2500),           # sweet spot: 2300
-            "title": (15, 35),               # sweet spot: 25
-            "warm_opening": (180, 300),      # sweet spot: 240
-            "main_takeaways": (700, 1000),   # sweet spot: 850
-            "tools": (150, 300),             # sweet spot: 225
-            "achievements": (280, 500),      # sweet spot: 390
-            "next_steps": (120, 200)         # sweet spot: 160
+            "total": (2000, 2600),           # sweet spot: 2300, relaxed from 2200-2500
+            "title": (10, 40),               # sweet spot: 25
+            "warm_opening": (150, 350),      # sweet spot: 250
+            "main_takeaways": (600, 1100),   # sweet spot: 850
+            "tools": (120, 350),             # sweet spot: 235
+            "achievements": (250, 550),      # sweet spot: 400
+            "next_steps": (100, 250)         # sweet spot: 175
         }
 
         # Parse sections
@@ -182,11 +182,48 @@ def verify_document_draft(content: str, document_type: str) -> str:
         if all_pass:
             results.append("=== ALL SECTIONS PASS === You may now save the document.")
             log_tool_call("verify_document_draft", {"document_type": document_type, "total_chars": total_chars}, output="ALL PASS", status="success")
+            return '\n'.join(results)
         else:
-            results.append("=== SOME SECTIONS FAIL === Adjust content to fit target ranges, then verify again.")
-            log_tool_call("verify_document_draft", {"document_type": document_type, "total_chars": total_chars}, output="FAILED", status="fail")
+            # Build specific edit instructions
+            edit_instructions = []
 
-        return '\n'.join(results)
+            total_min, total_max = limits['total']
+            if total_chars < total_min:
+                edit_instructions.append(f"TOTAL: ADD {total_min - total_chars} chars overall")
+            elif total_chars > total_max:
+                edit_instructions.append(f"TOTAL: REMOVE {total_chars - total_max} chars overall")
+
+            if warm_len < limits['warm_opening'][0]:
+                edit_instructions.append(f"Warm Opening: ADD {limits['warm_opening'][0] - warm_len} chars")
+            elif warm_len > limits['warm_opening'][1]:
+                edit_instructions.append(f"Warm Opening: REMOVE {warm_len - limits['warm_opening'][1]} chars")
+
+            for section_key in ["main_takeaways", "tools", "achievements", "next_steps"]:
+                section_content = sections.get(section_key, "")
+                section_len = len(section_content)
+                min_val, max_val = limits[section_key]
+                section_name = section_key.replace("_", " ").title()
+                if section_len < min_val:
+                    edit_instructions.append(f"{section_name}: ADD {min_val - section_len} chars")
+                elif section_len > max_val:
+                    edit_instructions.append(f"{section_name}: REMOVE {section_len - max_val} chars")
+
+            # Return draft + edit instructions so LLM can edit in place
+            results.append("=== EDIT REQUIRED ===")
+            results.append("")
+            results.append("SPECIFIC EDITS NEEDED:")
+            for instruction in edit_instructions:
+                results.append(f"  • {instruction}")
+            results.append("")
+            results.append("Edit the draft below. Do NOT regenerate from transcription.")
+            results.append("")
+            results.append("---START DRAFT---")
+            results.append(content)
+            results.append("---END DRAFT---")
+            results.append("")
+            results.append("Make the edits above, then call verify_document_draft again.")
+            log_tool_call("verify_document_draft", {"document_type": document_type, "total_chars": total_chars}, output=f"FAILED - edits needed: {edit_instructions}", status="fail")
+            return '\n'.join(results)
 
     elif document_type == "homework":
         if total_chars <= 1800:
