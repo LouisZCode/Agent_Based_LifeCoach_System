@@ -389,6 +389,11 @@ def strip_context_tags(text: str) -> str:
 def invoke_agent(agent, messages: list) -> str:
     """Invoke an agent with the conversation history and return response"""
     from langchain_core.messages import AIMessage, HumanMessage
+    from functions import log_separator
+
+    # Log separator for each agent call
+    latest_msg = messages[-1]["content"][:50] if messages else "New Session"
+    log_separator(f"Agent Call: {latest_msg}...")
 
     # Convert dict messages to LangChain message objects
     lc_messages = []
