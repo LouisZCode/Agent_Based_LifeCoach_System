@@ -34,7 +34,7 @@ session_agent_prompt: |
   - read_folder: Get folder/client information from the database
   - read_template: Read before creating any document.
     Templates are:
-    - Summary: "summary_template_llmready_V2.docx"
+    - Summary: "summary_template_llmready.docx"
     - Homework: "homework_template_llmready.docx"
     - Draft: "next_session_template_llmready.docx"
   - verify_document_draft: use before saving. Pass your draft and document type ("summary", "homework", or "draft"). Will tell you if sections pass or fail character limits.

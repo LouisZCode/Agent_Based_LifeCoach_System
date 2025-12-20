@@ -236,20 +236,282 @@ def verify_document_draft(content: str, document_type: str, attempt: int = 1) ->
             return '\n'.join(results)
 
     elif document_type == "homework":
-        if total_chars <= 1800:
-            log_tool_call("verify_document_draft", {"document_type": "homework"}, output=f"PASS ({total_chars}/1800)", status="success")
-            return f"TOTAL: {total_chars} / 1800 chars ✓ PASS\n\n=== DOCUMENT PASSES === You may now save."
+        # (min, max) ranges for homework
+        limits = {
+            "total": (1200, 1800),
+            "title": (20, 60),
+            "goal": (80, 200),
+            "instructions": (150, 350),
+            "before_you_begin": (200, 350),
+            "prompt_questions": (300, 700),
+        }
+
+        # Parse sections
+        title = lines[0] if lines else ""
+
+        sections = {}
+        current_section = None
+        current_content = []
+        section_markers = {
+            "Goal:": "goal",
+            "Instructions": "instructions",
+            "Before you begin": "before_you_begin",
+            "Prompt Questions": "prompt_questions",
+        }
+
+        for line in lines[1:]:
+            line_stripped = line.strip()
+            matched = False
+            for marker, key in section_markers.items():
+                if line_stripped.startswith(marker):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content).strip()
+                    current_section = key
+                    current_content = []
+                    # If content on same line as marker (e.g., "Goal: Some text")
+                    remaining = line_stripped[len(marker):].strip()
+                    if remaining:
+                        current_content.append(remaining)
+                    matched = True
+                    break
+            if not matched and current_section:
+                current_content.append(line)
+
+        if current_section:
+            sections[current_section] = '\n'.join(current_content).strip()
+
+        # Build result
+        results = []
+        all_pass = True
+
+        def check_range(value, min_val, max_val):
+            if value < min_val:
+                return f"✗ TOO SHORT (need {min_val - value} more)"
+            elif value > max_val:
+                return f"✗ TOO LONG (remove {value - max_val})"
+            else:
+                return "✓ PASS"
+
+        def overshoot(chars_to_remove):
+            return int(chars_to_remove * 1.1)
+
+        # Total check
+        total_min, total_max = limits['total']
+        total_status = check_range(total_chars, total_min, total_max)
+        results.append(f"TOTAL: {total_chars} chars (target: {total_min}-{total_max}) {total_status}")
+        if total_chars < total_min or total_chars > total_max:
+            all_pass = False
+
+        # Title check
+        title_len = len(title)
+        title_min, title_max = limits['title']
+        title_status = check_range(title_len, title_min, title_max)
+        results.append(f"Title: {title_len} chars (target: {title_min}-{title_max}) {title_status}")
+        if title_len < title_min or title_len > title_max:
+            all_pass = False
+
+        # Section checks
+        for section_key in ["goal", "instructions", "before_you_begin", "prompt_questions"]:
+            section_content = sections.get(section_key, "")
+            section_len = len(section_content)
+            min_val, max_val = limits[section_key]
+            status = check_range(section_len, min_val, max_val)
+            passed = min_val <= section_len <= max_val
+            if not passed:
+                all_pass = False
+            section_name = section_key.replace("_", " ").title()
+            results.append(f"{section_name}: {section_len} chars (target: {min_val}-{max_val}) {status}")
+
+        results.append("")
+        if all_pass:
+            results.append("=== ALL SECTIONS PASS === You may now save the document.")
+            log_tool_call("verify_document_draft", {"document_type": document_type, "total_chars": total_chars}, output="ALL PASS", status="success")
+            return '\n'.join(results)
         else:
-            log_tool_call("verify_document_draft", {"document_type": "homework"}, output=f"FAIL ({total_chars}/1800)", status="fail")
-            return f"TOTAL: {total_chars} / 1800 chars ✗ FAIL - OVER BY {total_chars - 1800}\n\n=== DOCUMENT FAILS === Edit to reduce characters, then verify again."
+            # Build specific edit instructions
+            edit_instructions = []
+
+            total_min, total_max = limits['total']
+            if total_chars < total_min:
+                edit_instructions.append(f"TOTAL: ADD {total_min - total_chars} chars overall")
+            elif total_chars > total_max:
+                edit_instructions.append(f"TOTAL: REMOVE {overshoot(total_chars - total_max)} chars overall")
+
+            if title_len < limits['title'][0]:
+                edit_instructions.append(f"Title: ADD {limits['title'][0] - title_len} chars")
+            elif title_len > limits['title'][1]:
+                edit_instructions.append(f"Title: REMOVE {overshoot(title_len - limits['title'][1])} chars")
+
+            for section_key in ["goal", "instructions", "before_you_begin", "prompt_questions"]:
+                section_content = sections.get(section_key, "")
+                section_len = len(section_content)
+                min_val, max_val = limits[section_key]
+                section_name = section_key.replace("_", " ").title()
+                if section_len < min_val:
+                    edit_instructions.append(f"{section_name}: ADD {min_val - section_len} chars")
+                elif section_len > max_val:
+                    edit_instructions.append(f"{section_name}: REMOVE {overshoot(section_len - max_val)} chars")
+
+            # Return draft + edit instructions
+            results.append("=== EDIT REQUIRED ===")
+            results.append("")
+            results.append("SPECIFIC EDITS NEEDED:")
+            for instruction in edit_instructions:
+                results.append(f"  • {instruction}")
+            results.append("")
+            results.append("Edit the draft below. Do NOT regenerate from transcription.")
+            results.append("")
+            results.append("---START DRAFT---")
+            results.append(content)
+            results.append("---END DRAFT---")
+            results.append("")
+            results.append("Make the edits above, then call verify_document_draft again.")
+            log_tool_call("verify_document_draft", {"document_type": document_type, "total_chars": total_chars}, output=f"FAILED - edits needed: {edit_instructions}", status="fail")
+            return '\n'.join(results)
 
     elif document_type == "draft":
-        if total_chars <= 2500:
-            log_tool_call("verify_document_draft", {"document_type": "draft"}, output=f"PASS ({total_chars}/2500)", status="success")
-            return f"TOTAL: {total_chars} / 2500 chars ✓ PASS\n\n=== DOCUMENT PASSES === You may now save."
+        # (min, max) ranges for next session draft
+        limits = {
+            "total": (1500, 2500),
+            "title": (20, 60),
+            "greeting_checkin": (100, 250),
+            "homework_assessment": (150, 350),
+            "main_focus": (300, 500),
+            "suggested_tools": (100, 300),
+            "emerging_topics": (100, 250),
+            "next_steps": (100, 250),
+            "homework_next": (100, 200),
+        }
+
+        # Parse sections
+        title = lines[0] if lines else ""
+
+        sections = {}
+        current_section = None
+        current_content = []
+        section_markers = {
+            "Greeting / Check-In": "greeting_checkin",
+            "Homework Assessment": "homework_assessment",
+            "Main Focus": "main_focus",
+            "Suggested Tools": "suggested_tools",
+            "Emerging Topics": "emerging_topics",
+            "Next Steps": "next_steps",
+            "Homework for Next Session": "homework_next",
+        }
+
+        for line in lines[1:]:
+            line_stripped = line.strip()
+            matched = False
+            for marker, key in section_markers.items():
+                if line_stripped.startswith(marker):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content).strip()
+                    current_section = key
+                    current_content = []
+                    matched = True
+                    break
+            if not matched and current_section:
+                current_content.append(line)
+
+        if current_section:
+            sections[current_section] = '\n'.join(current_content).strip()
+
+        # Build result
+        results = []
+        all_pass = True
+
+        def check_range(value, min_val, max_val):
+            if value < min_val:
+                return f"✗ TOO SHORT (need {min_val - value} more)"
+            elif value > max_val:
+                return f"✗ TOO LONG (remove {value - max_val})"
+            else:
+                return "✓ PASS"
+
+        def overshoot(chars_to_remove):
+            return int(chars_to_remove * 1.1)
+
+        # Total check
+        total_min, total_max = limits['total']
+        total_status = check_range(total_chars, total_min, total_max)
+        results.append(f"TOTAL: {total_chars} chars (target: {total_min}-{total_max}) {total_status}")
+        if total_chars < total_min or total_chars > total_max:
+            all_pass = False
+
+        # Title check
+        title_len = len(title)
+        title_min, title_max = limits['title']
+        title_status = check_range(title_len, title_min, title_max)
+        results.append(f"Title: {title_len} chars (target: {title_min}-{title_max}) {title_status}")
+        if title_len < title_min or title_len > title_max:
+            all_pass = False
+
+        # Section checks
+        section_keys = ["greeting_checkin", "homework_assessment", "main_focus", "suggested_tools", "emerging_topics", "next_steps", "homework_next"]
+        section_names = {
+            "greeting_checkin": "Greeting/Check-In",
+            "homework_assessment": "Homework Assessment",
+            "main_focus": "Main Focus",
+            "suggested_tools": "Suggested Tools",
+            "emerging_topics": "Emerging Topics",
+            "next_steps": "Next Steps",
+            "homework_next": "Homework Next Session",
+        }
+        for section_key in section_keys:
+            section_content = sections.get(section_key, "")
+            section_len = len(section_content)
+            min_val, max_val = limits[section_key]
+            status = check_range(section_len, min_val, max_val)
+            passed = min_val <= section_len <= max_val
+            if not passed:
+                all_pass = False
+            results.append(f"{section_names[section_key]}: {section_len} chars (target: {min_val}-{max_val}) {status}")
+
+        results.append("")
+        if all_pass:
+            results.append("=== ALL SECTIONS PASS === You may now save the document.")
+            log_tool_call("verify_document_draft", {"document_type": document_type, "total_chars": total_chars}, output="ALL PASS", status="success")
+            return '\n'.join(results)
         else:
-            log_tool_call("verify_document_draft", {"document_type": "draft"}, output=f"FAIL ({total_chars}/2500)", status="fail")
-            return f"TOTAL: {total_chars} / 2500 chars ✗ FAIL - OVER BY {total_chars - 2500}\n\n=== DOCUMENT FAILS === Edit to reduce characters, then verify again."
+            # Build specific edit instructions
+            edit_instructions = []
+
+            total_min, total_max = limits['total']
+            if total_chars < total_min:
+                edit_instructions.append(f"TOTAL: ADD {total_min - total_chars} chars overall")
+            elif total_chars > total_max:
+                edit_instructions.append(f"TOTAL: REMOVE {overshoot(total_chars - total_max)} chars overall")
+
+            if title_len < limits['title'][0]:
+                edit_instructions.append(f"Title: ADD {limits['title'][0] - title_len} chars")
+            elif title_len > limits['title'][1]:
+                edit_instructions.append(f"Title: REMOVE {overshoot(title_len - limits['title'][1])} chars")
+
+            for section_key in section_keys:
+                section_content = sections.get(section_key, "")
+                section_len = len(section_content)
+                min_val, max_val = limits[section_key]
+                if section_len < min_val:
+                    edit_instructions.append(f"{section_names[section_key]}: ADD {min_val - section_len} chars")
+                elif section_len > max_val:
+                    edit_instructions.append(f"{section_names[section_key]}: REMOVE {overshoot(section_len - max_val)} chars")
+
+            # Return draft + edit instructions
+            results.append("=== EDIT REQUIRED ===")
+            results.append("")
+            results.append("SPECIFIC EDITS NEEDED:")
+            for instruction in edit_instructions:
+                results.append(f"  • {instruction}")
+            results.append("")
+            results.append("Edit the draft below. Do NOT regenerate from transcription.")
+            results.append("")
+            results.append("---START DRAFT---")
+            results.append(content)
+            results.append("---END DRAFT---")
+            results.append("")
+            results.append("Make the edits above, then call verify_document_draft again.")
+            log_tool_call("verify_document_draft", {"document_type": document_type, "total_chars": total_chars}, output=f"FAILED - edits needed: {edit_instructions}", status="fail")
+            return '\n'.join(results)
 
     else:
         log_tool_call("verify_document_draft", {"document_type": document_type}, output="Unknown type", status="error")
