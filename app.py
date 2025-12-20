@@ -30,6 +30,9 @@ from functions import (
     transcribe_with_diarization,
 )
 
+# Import audio capture module
+from audio_capture import get_audio_capturer, get_platform_info
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -465,6 +468,16 @@ if "transcription_session_path" not in st.session_state:
 if "transcription_session_folder" not in st.session_state:
     st.session_state.transcription_session_folder = None
 
+# Tab 1: Audio Recording state
+if "audio_capturer" not in st.session_state:
+    st.session_state.audio_capturer = None
+if "is_recording" not in st.session_state:
+    st.session_state.is_recording = False
+if "recording_start_time" not in st.session_state:
+    st.session_state.recording_start_time = None
+if "recorded_audio_path" not in st.session_state:
+    st.session_state.recorded_audio_path = None
+
 # Tab 2: Undefined Clients
 if "messages_undefined" not in st.session_state:
     st.session_state.messages_undefined = []
@@ -511,221 +524,391 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 
 # ============================================================================
-# TAB 1: TRANSCRIBE AUDIO
+# TAB 1: AUDIO (RECORD & TRANSCRIBE)
 # ============================================================================
 
 with tab1:
-    st.header("Audio Transcription")
-    st.caption("Transcribe session recordings and create session folders")
+    st.header("Audio")
 
-    col1, col2 = st.columns([1, 1])
-
-    with col1:
-        # Client type selector
-        client_type = st.radio(
-            "Client Type",
-            options=["Undefined", "Active"],
-            horizontal=True,
-            key="transcribe_client_type"
-        )
-
-    with col2:
-        # Date picker
-        transcribe_date = st.date_input(
-            "Session Date",
-            value=datetime.today(),
-            key="transcribe_date"
-        )
-
-    # Client selection based on type
-    if client_type == "Undefined":
-        undefined_clients = get_undefined_clients()
-        col_select, col_new = st.columns([1, 1])
-
-        with col_select:
-            if undefined_clients:
-                selected_existing = st.selectbox(
-                    "Select Existing Client",
-                    options=["-- Create New --"] + undefined_clients,
-                    key="undefined_client_select"
-                )
-            else:
-                selected_existing = "-- Create New --"
-                st.info("No existing undefined clients. Enter a new name below.")
-
-        with col_new:
-            new_client_name = st.text_input(
-                "Or Enter New Client Name",
-                placeholder="Enter new client name...",
-                key="new_undefined_client_name"
-            )
-
-        # Determine final client name
-        if new_client_name:
-            final_client_name = new_client_name
-        elif selected_existing and selected_existing != "-- Create New --":
-            final_client_name = selected_existing
-        else:
-            final_client_name = None
-
-    else:  # Active
-        active_clients = get_active_clients()
-        if active_clients:
-            final_client_name = st.selectbox(
-                "Select Active Client",
-                options=active_clients,
-                key="active_client_select_transcribe"
-            )
-        else:
-            st.warning("No active clients found. Please add clients from the Undefined Clients tab first.")
-            final_client_name = None
+    # Mode selector: Record or Transcribe
+    audio_mode = st.radio(
+        "Mode",
+        options=["Record Session", "Transcribe Audio"],
+        horizontal=True,
+        key="audio_mode"
+    )
 
     st.divider()
 
-    # Speaker diarization option
-    diarization_available = is_diarization_available()
+    # -------------------------------------------------------------------------
+    # RECORD SESSION MODE
+    # -------------------------------------------------------------------------
+    if audio_mode == "Record Session":
+        st.caption("Record a coaching session (captures microphone + system audio via BlackHole)")
 
-    diarization_col1, diarization_col2 = st.columns([1, 3])
-
-    with diarization_col1:
-        enable_diarization = st.checkbox(
-            "Identify Speakers",
-            value=False,
-            disabled=not diarization_available,
-            key="enable_diarization",
-            help="Use Pyannote to identify different speakers in the recording"
-        )
-
-    with diarization_col2:
-        if not diarization_available:
-            st.caption("⚠️ Speaker identification unavailable. Set `HUGGINGFACE_TOKEN` in .env file and install `pyannote.audio`.")
-        elif enable_diarization and not is_diarization_model_cached():
-            st.caption("📥 First use will download the diarization model (~200MB)")
-        elif enable_diarization:
-            st.caption("✓ Speaker identification enabled")
-
-    # Audio file uploader
-    audio_file = st.file_uploader(
-        "Upload Audio File",
-        type=['mp3', 'wav', 'm4a', 'flac'],
-        key="audio_file_upload"
-    )
-
-    if audio_file:
-        st.audio(audio_file)
-        st.caption(f"File: {audio_file.name} ({audio_file.size / 1024 / 1024:.2f} MB)")
-
-    # Transcribe button
-    transcribe_col1, transcribe_col2 = st.columns([1, 3])
-
-    with transcribe_col1:
-        transcribe_button = st.button(
-            "🎙️ Transcribe",
-            type="primary",
-            key="transcribe_button",
-            disabled=not (final_client_name and audio_file)
-        )
-
-    if transcribe_button and final_client_name and audio_file:
-        # Validation
-        if audio_file.size == 0:
-            st.error("The uploaded file appears to be empty.")
+        # Check platform support
+        platform_info = get_platform_info()
+        if not platform_info["supported"]:
+            st.error(f"Audio recording not supported on {platform_info['platform']}")
+            st.info("Requirements: " + ", ".join(platform_info["requirements"]))
         else:
-            # Check if models need to be downloaded
-            model_cached = is_model_cached()
-            diarization_model_cached = is_diarization_model_cached() if enable_diarization else True
+            # Initialize capturer if needed
+            if st.session_state.audio_capturer is None:
+                try:
+                    st.session_state.audio_capturer = get_audio_capturer()
+                except Exception as e:
+                    st.error(f"Failed to initialize audio capture: {e}")
 
-            try:
-                # Create session folder (returns sanitized client name)
-                session_path, session_folder, safe_client_name = create_session_folder_for_transcription(
-                    final_client_name,
-                    client_type,
-                    transcribe_date
+            if st.session_state.audio_capturer:
+                capturer = st.session_state.audio_capturer
+
+                # Device selector
+                devices = capturer.get_available_devices()
+                device_names = [f"{d['name']} ({d['channels']}ch)" for d in devices]
+                device_ids = [d['id'] for d in devices]
+
+                if not devices:
+                    st.warning("No audio input devices found. Please check your audio settings.")
+                else:
+                    selected_device_idx = st.selectbox(
+                        "Audio Input Device",
+                        options=range(len(device_names)),
+                        format_func=lambda x: device_names[x],
+                        key="record_device_select",
+                        help="Select 'Session Capture' (aggregate device) to record mic + system audio"
+                    )
+                    selected_device_id = device_ids[selected_device_idx]
+
+                    # Client and date selection (similar to transcribe)
+                    rec_col1, rec_col2 = st.columns([1, 1])
+
+                    with rec_col1:
+                        rec_client_type = st.radio(
+                            "Client Type",
+                            options=["Undefined", "Active"],
+                            horizontal=True,
+                            key="record_client_type"
+                        )
+
+                    with rec_col2:
+                        rec_date = st.date_input(
+                            "Session Date",
+                            value=datetime.today(),
+                            key="record_date"
+                        )
+
+                    # Client selection based on type
+                    if rec_client_type == "Undefined":
+                        undefined_clients = get_undefined_clients()
+                        rec_col_select, rec_col_new = st.columns([1, 1])
+
+                        with rec_col_select:
+                            if undefined_clients:
+                                rec_selected_existing = st.selectbox(
+                                    "Select Existing Client",
+                                    options=["-- Create New --"] + undefined_clients,
+                                    key="record_undefined_client_select"
+                                )
+                            else:
+                                rec_selected_existing = "-- Create New --"
+                                st.info("No existing undefined clients.")
+
+                        with rec_col_new:
+                            rec_new_client_name = st.text_input(
+                                "Or Enter New Client Name",
+                                placeholder="Enter new client name...",
+                                key="record_new_undefined_client"
+                            )
+
+                        if rec_new_client_name:
+                            rec_final_client = rec_new_client_name
+                        elif rec_selected_existing and rec_selected_existing != "-- Create New --":
+                            rec_final_client = rec_selected_existing
+                        else:
+                            rec_final_client = None
+                    else:
+                        active_clients = get_active_clients()
+                        if active_clients:
+                            rec_final_client = st.selectbox(
+                                "Select Active Client",
+                                options=active_clients,
+                                key="record_active_client_select"
+                            )
+                        else:
+                            st.warning("No active clients found.")
+                            rec_final_client = None
+
+                    st.divider()
+
+                    # Recording controls
+                    if st.session_state.is_recording:
+                        # Show recording status
+                        duration = capturer.get_recording_duration()
+                        minutes = int(duration // 60)
+                        seconds = int(duration % 60)
+                        st.warning(f"🔴 Recording... {minutes:02d}:{seconds:02d}")
+
+                        if st.button("⏹️ Stop Recording", type="primary", key="stop_recording"):
+                            saved_path = capturer.stop_recording()
+                            st.session_state.is_recording = False
+                            st.session_state.recorded_audio_path = saved_path
+                            st.success(f"Recording saved to: {saved_path}")
+                            st.rerun()
+                    else:
+                        # Start recording button
+                        can_record = rec_final_client is not None
+
+                        if st.button(
+                            "🎙️ Start Recording",
+                            type="primary",
+                            key="start_recording",
+                            disabled=not can_record
+                        ):
+                            if not can_record:
+                                st.warning("Please select or enter a client name first.")
+                            else:
+                                # Create session folder
+                                session_path, session_folder, safe_client = create_session_folder_for_transcription(
+                                    rec_final_client,
+                                    rec_client_type,
+                                    rec_date
+                                )
+
+                                # Create output path
+                                audio_filename = f"recording_{datetime.now().strftime('%H%M%S')}.wav"
+                                output_path = os.path.join(session_path, audio_filename)
+
+                                # Start recording
+                                capturer.start_recording(
+                                    device_id=selected_device_id,
+                                    output_path=output_path
+                                )
+                                st.session_state.is_recording = True
+                                st.session_state.recording_start_time = datetime.now()
+                                st.rerun()
+
+                        if not can_record:
+                            st.info("Select a client to enable recording.")
+
+                    # Show last recording if available
+                    if st.session_state.recorded_audio_path and os.path.exists(st.session_state.recorded_audio_path):
+                        st.divider()
+                        st.subheader("Last Recording")
+                        st.audio(st.session_state.recorded_audio_path)
+                        st.caption(f"Saved to: {st.session_state.recorded_audio_path}")
+
+    # -------------------------------------------------------------------------
+    # TRANSCRIBE AUDIO MODE
+    # -------------------------------------------------------------------------
+    else:
+        st.caption("Transcribe session recordings and create session folders")
+
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            # Client type selector
+            client_type = st.radio(
+                "Client Type",
+                options=["Undefined", "Active"],
+                horizontal=True,
+                key="transcribe_client_type"
+            )
+
+        with col2:
+            # Date picker
+            transcribe_date = st.date_input(
+                "Session Date",
+                value=datetime.today(),
+                key="transcribe_date"
+            )
+
+        # Client selection based on type
+        if client_type == "Undefined":
+            undefined_clients = get_undefined_clients()
+            col_select, col_new = st.columns([1, 1])
+
+            with col_select:
+                if undefined_clients:
+                    selected_existing = st.selectbox(
+                        "Select Existing Client",
+                        options=["-- Create New --"] + undefined_clients,
+                        key="undefined_client_select"
+                    )
+                else:
+                    selected_existing = "-- Create New --"
+                    st.info("No existing undefined clients. Enter a new name below.")
+
+            with col_new:
+                new_client_name = st.text_input(
+                    "Or Enter New Client Name",
+                    placeholder="Enter new client name...",
+                    key="new_undefined_client_name"
                 )
 
-                # Save audio file
-                audio_path = save_audio_file(session_path, audio_file)
+            # Determine final client name
+            if new_client_name:
+                final_client_name = new_client_name
+            elif selected_existing and selected_existing != "-- Create New --":
+                final_client_name = selected_existing
+            else:
+                final_client_name = None
 
-                # Show appropriate message based on model cache status
-                if not model_cached:
-                    st.info("📥 First time setup: Downloading transcription model (~600MB). This only happens once...")
+        else:  # Active
+            active_clients = get_active_clients()
+            if active_clients:
+                final_client_name = st.selectbox(
+                    "Select Active Client",
+                    options=active_clients,
+                    key="active_client_select_transcribe"
+                )
+            else:
+                st.warning("No active clients found. Please add clients from the Undefined Clients tab first.")
+                final_client_name = None
 
-                if enable_diarization and not diarization_model_cached:
-                    st.info("📥 Downloading speaker diarization model (~200MB). This only happens once...")
-
-                # Determine which transcription method to use
-                if enable_diarization:
-                    # Use diarization workflow
-                    with st.spinner("🎙️ Transcribing and identifying speakers..."):
-                        transcription_text, diarization_used = transcribe_with_diarization(audio_path)
-
-                    if diarization_used:
-                        st.success("✓ Speaker identification applied")
-                    else:
-                        st.warning("Speaker identification failed, using plain transcription")
-                else:
-                    # Standard transcription without diarization
-                    if not model_cached:
-                        with st.spinner("📥 Downloading model..."):
-                            transcription_text = transcribe_audio(audio_path)
-                    else:
-                        # Model is cached - use progress bar for transcription
-                        st.write("🎙️ Transcribing audio...")
-                        progress_bar = st.progress(0, text="Starting transcription...")
-
-                        def update_progress(progress: float):
-                            percent = int(progress * 100)
-                            progress_bar.progress(progress, text=f"Transcribing... {percent}%")
-
-                        transcription_text = transcribe_audio(audio_path, progress_callback=update_progress)
-                        progress_bar.progress(1.0, text="Transcription complete!")
-
-                # Save transcription
-                save_transcription(session_path, transcription_text)
-
-                # Store in session state
-                st.session_state.transcription_result = transcription_text
-                st.session_state.transcription_session_path = session_path
-                st.session_state.transcription_session_folder = session_folder
-
-                st.success(f"Transcription complete! Saved to: {safe_client_name}/{session_folder}/")
-
-            except FileNotFoundError as e:
-                st.error(f"File error: {str(e)}")
-            except ValueError as e:
-                st.error(f"Invalid file: {str(e)}")
-            except RuntimeError as e:
-                st.error(f"Transcription failed: {str(e)}")
-            except Exception as e:
-                st.error(f"An unexpected error occurred: {str(e)}")
-
-    # Display transcription result
-    if st.session_state.transcription_result:
         st.divider()
-        st.subheader("Transcription Result")
 
-        if st.session_state.transcription_session_folder:
-            st.caption(f"Session: {st.session_state.transcription_session_folder}")
+        # Speaker diarization option
+        diarization_available = is_diarization_available()
 
-        # Display in text area
-        st.text_area(
-            "Transcription",
-            value=st.session_state.transcription_result,
-            height=300,
-            key="transcription_display",
-            disabled=True
+        diarization_col1, diarization_col2 = st.columns([1, 3])
+
+        with diarization_col1:
+            enable_diarization = st.checkbox(
+                "Identify Speakers",
+                value=False,
+                disabled=not diarization_available,
+                key="enable_diarization",
+                help="Use Pyannote to identify different speakers in the recording"
+            )
+
+        with diarization_col2:
+            if not diarization_available:
+                st.caption("⚠️ Speaker identification unavailable. Set `HUGGINGFACE_TOKEN` in .env file and install `pyannote.audio`.")
+            elif enable_diarization and not is_diarization_model_cached():
+                st.caption("📥 First use will download the diarization model (~200MB)")
+            elif enable_diarization:
+                st.caption("✓ Speaker identification enabled")
+
+        # Audio file uploader
+        audio_file = st.file_uploader(
+            "Upload Audio File",
+            type=['mp3', 'wav', 'm4a', 'flac'],
+            key="audio_file_upload"
         )
 
-        # Download button
-        st.download_button(
-            label="📥 Download Transcription",
-            data=st.session_state.transcription_result,
-            file_name="transcription.txt",
-            mime="text/plain",
-            key="download_transcription"
-        )
+        if audio_file:
+            st.audio(audio_file)
+            st.caption(f"File: {audio_file.name} ({audio_file.size / 1024 / 1024:.2f} MB)")
 
-    # Clear button in sidebar will handle clearing transcription state
+        # Transcribe button
+        transcribe_col1, transcribe_col2 = st.columns([1, 3])
+
+        with transcribe_col1:
+            transcribe_button = st.button(
+                "🎙️ Transcribe",
+                type="primary",
+                key="transcribe_button",
+                disabled=not (final_client_name and audio_file)
+            )
+
+        if transcribe_button and final_client_name and audio_file:
+            # Validation
+            if audio_file.size == 0:
+                st.error("The uploaded file appears to be empty.")
+            else:
+                # Check if models need to be downloaded
+                model_cached = is_model_cached()
+                diarization_model_cached = is_diarization_model_cached() if enable_diarization else True
+
+                try:
+                    # Create session folder (returns sanitized client name)
+                    session_path, session_folder, safe_client_name = create_session_folder_for_transcription(
+                        final_client_name,
+                        client_type,
+                        transcribe_date
+                    )
+
+                    # Save audio file
+                    audio_path = save_audio_file(session_path, audio_file)
+
+                    # Show appropriate message based on model cache status
+                    if not model_cached:
+                        st.info("📥 First time setup: Downloading transcription model (~600MB). This only happens once...")
+
+                    if enable_diarization and not diarization_model_cached:
+                        st.info("📥 Downloading speaker diarization model (~200MB). This only happens once...")
+
+                    # Determine which transcription method to use
+                    if enable_diarization:
+                        # Use diarization workflow
+                        with st.spinner("🎙️ Transcribing and identifying speakers..."):
+                            transcription_text, diarization_used = transcribe_with_diarization(audio_path)
+
+                        if diarization_used:
+                            st.success("✓ Speaker identification applied")
+                        else:
+                            st.warning("Speaker identification failed, using plain transcription")
+                    else:
+                        # Standard transcription without diarization
+                        if not model_cached:
+                            with st.spinner("📥 Downloading model..."):
+                                transcription_text = transcribe_audio(audio_path)
+                        else:
+                            # Model is cached - use progress bar for transcription
+                            st.write("🎙️ Transcribing audio...")
+                            progress_bar = st.progress(0, text="Starting transcription...")
+
+                            def update_progress(progress: float):
+                                percent = int(progress * 100)
+                                progress_bar.progress(progress, text=f"Transcribing... {percent}%")
+
+                            transcription_text = transcribe_audio(audio_path, progress_callback=update_progress)
+                            progress_bar.progress(1.0, text="Transcription complete!")
+
+                    # Save transcription
+                    save_transcription(session_path, transcription_text)
+
+                    # Store in session state
+                    st.session_state.transcription_result = transcription_text
+                    st.session_state.transcription_session_path = session_path
+                    st.session_state.transcription_session_folder = session_folder
+
+                    st.success(f"Transcription complete! Saved to: {safe_client_name}/{session_folder}/")
+
+                except FileNotFoundError as e:
+                    st.error(f"File error: {str(e)}")
+                except ValueError as e:
+                    st.error(f"Invalid file: {str(e)}")
+                except RuntimeError as e:
+                    st.error(f"Transcription failed: {str(e)}")
+                except Exception as e:
+                    st.error(f"An unexpected error occurred: {str(e)}")
+
+        # Display transcription result
+        if st.session_state.transcription_result:
+            st.divider()
+            st.subheader("Transcription Result")
+
+            if st.session_state.transcription_session_folder:
+                st.caption(f"Session: {st.session_state.transcription_session_folder}")
+
+            # Display in text area
+            st.text_area(
+                "Transcription",
+                value=st.session_state.transcription_result,
+                height=300,
+                key="transcription_display",
+                disabled=True
+            )
+
+            # Download button
+            st.download_button(
+                label="📥 Download Transcription",
+                data=st.session_state.transcription_result,
+                file_name="transcription.txt",
+                mime="text/plain",
+                key="download_transcription"
+            )
 
 
 # ============================================================================
@@ -1105,7 +1288,7 @@ with tab3:
             doc_mapping = {
                 "summary": ("📄 Summary", "summary.txt"),
                 "homework": ("📝 Homework", "homework.txt"),
-                "next_prep": ("🔮 Next Session", "next_session.txt")
+                "next_session": ("🔮 Next Session", "next_session.txt")
             }
 
             for key, (label, filename) in doc_mapping.items():

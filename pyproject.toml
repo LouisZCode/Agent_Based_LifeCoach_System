@@ -21,4 +21,6 @@ dependencies = [
     "langchain-openai>=1.1.1",
     "parakeet-mlx>=0.4.1",
     "pyannote-audio>=4.0.3",
+    "sounddevice>=0.5.3",
+    "soundfile>=0.13.1",
 ]
