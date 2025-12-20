@@ -93,7 +93,7 @@ def verify_document_draft(content: str, document_type: str, attempt: int = 1) ->
     if attempt >= MAX_ATTEMPTS:
         log_tool_call("verify_document_draft", {"document_type": document_type, "attempt": attempt}, output="LIMIT REACHED - forcing save", status="limit")
         return f"=== ATTEMPT LIMIT REACHED ({attempt}/{MAX_ATTEMPTS}) ===\n\nYou have made {attempt} verification attempts. Save the document now to avoid excessive costs.\n\nCall the save tool immediately with your current draft."
-    log_tool_call("verify_document_draft", {"document_type": document_type, "content_length": len(content)})
+    log_tool_call("verify_document_draft", {"document_type": document_type, "attempt": attempt, "content_length": len(content)})
     lines = content.split('\n')
     total_chars = len(content)
 
@@ -102,8 +102,8 @@ def verify_document_draft(content: str, document_type: str, attempt: int = 1) ->
         limits = {
             "total": (2000, 2600),           # sweet spot: 2300, relaxed from 2200-2500
             "title": (10, 40),               # sweet spot: 25
-            "warm_opening": (100, 200),      # sweet spot: 150
-            "main_takeaways": (600, 1100),   # sweet spot: 850
+            "warm_opening": (50, 200),       # sweet spot: 125
+            "main_takeaways": (600, 900),    # sweet spot: 750, 3 bullets only
             "tools": (120, 350),             # sweet spot: 235
             "achievements": (250, 550),      # sweet spot: 400
             "next_steps": (100, 250)         # sweet spot: 175
