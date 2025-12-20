@@ -283,6 +283,26 @@ def load_session_transcription(client_name: str, session_folder: str) -> str | N
     return None
 
 
+def load_session_documents(client_name: str, session_folder: str) -> dict:
+    """Load existing documents (summary, homework, next_session) from a session folder."""
+    session_path = os.path.join(ACTIVE_PATH, client_name, session_folder)
+    documents = {}
+
+    doc_files = {
+        "summary": "summary.txt",
+        "homework": "homework.txt",
+        "next_session": "next_session.txt"
+    }
+
+    for key, filename in doc_files.items():
+        file_path = os.path.join(session_path, filename)
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                documents[key] = f.read()
+
+    return documents
+
+
 def get_next_session_number_for_path(client_name: str, base_path: str) -> int:
     """Get the next session number for a client in a specific path"""
     client_path = os.path.join(base_path, client_name)
@@ -460,12 +480,16 @@ if "session_documents" not in st.session_state:
     st.session_state.session_documents = {}
 if "current_session_folder" not in st.session_state:
     st.session_state.current_session_folder = None
+if "is_new_session_mode" not in st.session_state:
+    st.session_state.is_new_session_mode = False
 if "current_active_client" not in st.session_state:
     st.session_state.current_active_client = None
 if "loaded_transcription" not in st.session_state:
     st.session_state.loaded_transcription = None
 if "transcription_added_to_chat" not in st.session_state:
     st.session_state.transcription_added_to_chat = False
+if "documents_added_to_chat" not in st.session_state:
+    st.session_state.documents_added_to_chat = False
 
 # Tab 4: Chat Assistant
 if "messages_chat" not in st.session_state:
@@ -867,51 +891,84 @@ with tab3:
             st.session_state.current_active_client = selected_client
             st.session_state.loaded_transcription = None
             st.session_state.transcription_added_to_chat = False
+            st.session_state.documents_added_to_chat = False
             st.session_state.current_session_folder = None
+            st.session_state.is_new_session_mode = False
+            # Auto-clear LLM context when client changes
+            st.session_state.messages_active = []
+            st.session_state.session_documents = {}
 
         # Row 2: Session selection (existing vs new)
         existing_sessions = get_client_sessions(selected_client)
 
         session_options = ["+ Create New Session"] + existing_sessions
+        # Default to latest session (index 1) if sessions exist, otherwise "Create New" (index 0)
+        default_index = 1 if existing_sessions else 0
         selected_option = st.selectbox(
             "Select Session",
             options=session_options,
+            index=default_index,
             key="session_select"
         )
 
         if selected_option == "+ Create New Session":
-            # Show date picker for new session
+            # Show date picker for new session (empty by default to force selection)
             session_date = st.date_input(
-                "Session Date",
-                value=datetime.today(),
+                "Session Date (select to enable upload)",
+                value=None,
                 key="session_date"
             )
-            session_folder = get_or_create_session_folder(selected_client, session_date)
-            st.caption(f"New session: {session_folder}")
+            if session_date:
+                session_folder = get_or_create_session_folder(selected_client, session_date)
+                st.caption(f"New session: {session_folder}")
+                date_selected = True
+            else:
+                session_folder = None
+                st.info("Select a date to create a new session")
+                date_selected = False
             is_new_session = True
         else:
             # Use existing session
             session_folder = selected_option
             st.caption(f"Selected session: {session_folder}")
             is_new_session = False
+            date_selected = True  # Existing sessions already have a folder
 
-        # Reset transcription state if session changed
+        # Reset state if switching to new session mode (clears context from previous session)
+        if is_new_session and not st.session_state.is_new_session_mode:
+            st.session_state.loaded_transcription = None
+            st.session_state.transcription_added_to_chat = False
+            st.session_state.documents_added_to_chat = False
+            st.session_state.messages_active = []
+            st.session_state.session_documents = {}
+        st.session_state.is_new_session_mode = is_new_session
+
+        # Reset state if session changed
         if st.session_state.current_session_folder != session_folder:
             st.session_state.current_session_folder = session_folder
             st.session_state.loaded_transcription = None
             st.session_state.transcription_added_to_chat = False
+            st.session_state.documents_added_to_chat = False
+            # Auto-clear LLM context when session changes
+            st.session_state.messages_active = []
+            st.session_state.session_documents = {}
 
         # Auto-load transcription for existing sessions
-        session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
+        session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder) if session_folder else None
 
         if not is_new_session and st.session_state.loaded_transcription is None:
             transcription = load_session_transcription(selected_client, session_folder)
             if transcription:
                 st.session_state.loaded_transcription = transcription
 
+        # Auto-load existing documents for existing sessions
+        if not is_new_session and not st.session_state.session_documents:
+            loaded_docs = load_session_documents(selected_client, session_folder)
+            if loaded_docs:
+                st.session_state.session_documents = loaded_docs
+
         # Show transcription status and preview
         if st.session_state.loaded_transcription:
-            st.success("Transcription loaded from session")
             with st.expander("View Transcription", expanded=False):
                 st.text_area(
                     "Transcription Content",
@@ -933,18 +990,33 @@ with tab3:
         elif not is_new_session:
             st.info("No transcription found for this session")
 
-        # Optional: Upload a different transcription
+        # Add documents to chat context if not already added
+        if st.session_state.session_documents:
+            if not st.session_state.documents_added_to_chat:
+                for doc_type, content in st.session_state.session_documents.items():
+                    marker = f"[Session {doc_type} loaded]"
+                    if not any(marker in m.get("content", "") for m in st.session_state.messages_active):
+                        st.session_state.messages_active.append({
+                            "role": "user",
+                            "content": f"{marker}\n\n{content}"
+                        })
+                st.session_state.documents_added_to_chat = True
+
+        # Upload transcription
         st.divider()
+        upload_label = "Upload transcription" if is_new_session else "Or upload a different transcription"
         uploaded_file = st.file_uploader(
-            "Or upload a different transcription",
+            upload_label,
             type=['txt', 'docx', 'pdf'],
-            key="active_file_upload"
+            key="active_file_upload",
+            disabled=not date_selected
         )
 
-        if uploaded_file:
+        if uploaded_file and date_selected and session_folder:
             file_content = read_uploaded_file(uploaded_file)
             if file_content:
                 # Save transcription to client's session folder
+                session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
                 os.makedirs(session_path, exist_ok=True)
 
                 transcription_path = os.path.join(session_path, "transcription.txt")
@@ -972,13 +1044,29 @@ with tab3:
         with chat_container:
             for message in st.session_state.messages_active:
                 with st.chat_message(message["role"]):
-                    display_text = strip_context_tags(message["content"]) if message["role"] == "user" else message["content"]
+                    # Condense loaded document messages for display (full content still in LLM context)
+                    content = message["content"]
+                    if "[Session transcription" in content:
+                        display_text = "📄 Session transcription loaded"
+                    elif "[Session summary loaded]" in content:
+                        display_text = "📄 Summary loaded"
+                    elif "[Session homework loaded]" in content:
+                        display_text = "📄 Homework loaded"
+                    elif "[Session next_session loaded]" in content:
+                        display_text = "📄 Next Session Draft loaded"
+                    elif message["role"] == "user":
+                        display_text = strip_context_tags(content)
+                    else:
+                        display_text = content
                     st.markdown(display_text)
 
-        # Chat input
+        # Chat input (disabled until transcription is loaded)
+        chat_disabled = st.session_state.loaded_transcription is None
+        chat_placeholder = "Upload a transcription first..." if chat_disabled else "Type your session notes or instructions..."
         if prompt := st.chat_input(
-            "Type your session notes or instructions...",
-            key="active_chat_input"
+            chat_placeholder,
+            key="active_chat_input",
+            disabled=chat_disabled
         ):
             session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
             full_prompt = f"[Client: {selected_client}] [Session: {session_folder}] [Session Path: {session_path}]\n{prompt}"
