@@ -1,0 +1,15 @@
+Deepgram Live Streaming Test
+Date: 2025-12-21 17:06:33
+Device: HyperX Cloud III Wireless
+Sample Rate: 32000 Hz
+Duration: 10 seconds
+
+========================================
+
+Speaker 0: +1 23123. I'm speaking now. I am trying to
+
+Speaker 0: get a lot of,
+
+Speaker 0: things said now that I'm doing here. I will
+
+Speaker 0: unmute my PC

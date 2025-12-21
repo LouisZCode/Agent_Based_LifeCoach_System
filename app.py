@@ -30,6 +30,7 @@ from functions import (
     transcribe_with_diarization,
     is_deepgram_available,
     transcribe_with_deepgram,
+    DeepgramLiveTranscriber,
 )
 
 # Import audio capture module
@@ -480,6 +481,14 @@ if "recording_start_time" not in st.session_state:
 if "recorded_audio_path" not in st.session_state:
     st.session_state.recorded_audio_path = None
 
+# Tab 1: Live Transcription state
+if "live_transcriber" not in st.session_state:
+    st.session_state.live_transcriber = None
+if "live_transcript" not in st.session_state:
+    st.session_state.live_transcript = ""
+if "recording_session_path" not in st.session_state:
+    st.session_state.recording_session_path = None
+
 # Tab 2: Undefined Clients
 if "messages_undefined" not in st.session_state:
     st.session_state.messages_undefined = []
@@ -532,10 +541,10 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     st.header("Audio")
 
-    # Mode selector: Record or Transcribe
+    # Mode selector: Live Session or Transcribe
     audio_mode = st.radio(
         "Mode",
-        options=["Record Session", "Transcribe Audio"],
+        options=["Have a Live Session", "Transcribe Audio"],
         horizontal=True,
         key="audio_mode"
     )
@@ -543,10 +552,10 @@ with tab1:
     st.divider()
 
     # -------------------------------------------------------------------------
-    # RECORD SESSION MODE
+    # LIVE SESSION MODE
     # -------------------------------------------------------------------------
-    if audio_mode == "Record Session":
-        st.caption("Record a coaching session (captures microphone + system audio via BlackHole)")
+    if audio_mode == "Have a Live Session":
+        st.caption("Live session with real-time transcription (Deepgram)")
 
         # Check platform support
         platform_info = get_platform_info()
@@ -564,24 +573,28 @@ with tab1:
             if st.session_state.audio_capturer:
                 capturer = st.session_state.audio_capturer
 
-                # Device selector
+                # Auto-select "Session Capture" device
                 devices = capturer.get_available_devices()
-                device_names = [f"{d['name']} ({d['channels']}ch)" for d in devices]
-                device_ids = [d['id'] for d in devices]
+                selected_device_id = None
+                selected_device_name = None
 
-                if not devices:
-                    st.warning("No audio input devices found. Please check your audio settings.")
+                for d in devices:
+                    if "session capture" in d['name'].lower():
+                        selected_device_id = d['id']
+                        selected_device_name = f"{d['name']} ({d['channels']}ch)"
+                        break
+
+                if selected_device_id is None:
+                    st.error("⚠️ 'Session Capture' device not found. Please create the aggregate device in Audio MIDI Setup.")
+                    st.info("Requirements: BlackHole 2ch + Microphone combined into an aggregate device named 'Session Capture'")
                 else:
-                    selected_device_idx = st.selectbox(
-                        "Audio Input Device",
-                        options=range(len(device_names)),
-                        format_func=lambda x: device_names[x],
-                        key="record_device_select",
-                        help="Select 'Session Capture' (aggregate device) to record mic + system audio"
-                    )
-                    selected_device_id = device_ids[selected_device_idx]
+                    st.caption(f"🎧 {selected_device_name}")
 
-                    # Client and date selection (similar to transcribe)
+                    # Check Deepgram availability (required for live sessions)
+                    if not is_deepgram_available():
+                        st.error("⚠️ DEEPGRAM_API_KEY not configured. Add it to .env for live transcription.")
+
+                    # Client and date selection
                     rec_col1, rec_col2 = st.columns([1, 1])
 
                     with rec_col1:
@@ -648,54 +661,141 @@ with tab1:
                         duration = capturer.get_recording_duration()
                         minutes = int(duration // 60)
                         seconds = int(duration % 60)
-                        st.warning(f"🔴 Recording... {minutes:02d}:{seconds:02d}")
 
-                        if st.button("⏹️ Stop Recording", type="primary", key="stop_recording"):
+                        st.warning(f"🔴 Live Session... {minutes:02d}:{seconds:02d}")
+
+                        # Audio level meters
+                        mic_level, system_level = capturer.get_audio_levels()
+                        channel_count = capturer.get_channel_count()
+
+                        level_col1, level_col2 = st.columns(2)
+                        with level_col1:
+                            # Scale to 0-100 for progress bar (RMS is typically 0-0.3 for normal speech)
+                            mic_pct = min(int(mic_level * 300), 100)
+                            if channel_count >= 3:
+                                st.caption("🎤 Microphone")
+                                st.progress(mic_pct)
+                            else:
+                                st.caption("🎤 Input")
+                                st.progress(mic_pct if channel_count == 1 else 0)
+
+                        with level_col2:
+                            system_pct = min(int(system_level * 300), 100)
+                            if channel_count >= 3:
+                                st.caption("🔊 System Audio")
+                                st.progress(system_pct)
+                            elif channel_count == 2:
+                                st.caption("🔊 Audio")
+                                st.progress(system_pct)
+                            else:
+                                st.caption("🔊 System Audio")
+                                st.progress(0)
+
+                        # Show live transcript if available
+                        if st.session_state.live_transcript:
+                            with st.expander("📝 Live Transcript", expanded=True):
+                                st.text_area(
+                                    "Transcript",
+                                    value=st.session_state.live_transcript,
+                                    height=200,
+                                    disabled=True,
+                                    key="live_transcript_display"
+                                )
+
+                        if st.button("⏹️ End Session", type="primary", key="stop_recording"):
+                            # Stop audio capture
                             saved_path = capturer.stop_recording()
                             st.session_state.is_recording = False
                             st.session_state.recorded_audio_path = saved_path
-                            st.success(f"Recording saved to: {saved_path}")
+
+                            # Stop live transcriber and save transcript
+                            if st.session_state.live_transcriber:
+                                transcript = st.session_state.live_transcriber.stop()
+                                st.session_state.live_transcriber = None
+
+                                # Save transcription to session folder
+                                if transcript and st.session_state.recording_session_path:
+                                    save_transcription(st.session_state.recording_session_path, transcript)
+                                    st.success(f"Recording + transcription saved!")
+                                    st.info(f"Audio: {saved_path}")
+                                else:
+                                    st.success(f"Recording saved to: {saved_path}")
+                                    if not transcript:
+                                        st.warning("No transcript captured")
+
+                                st.session_state.live_transcript = ""
+                                st.session_state.recording_session_path = None
+                            else:
+                                st.success(f"Recording saved to: {saved_path}")
+
+                            st.rerun()
+                        else:
+                            # Auto-refresh while recording (every 0.5 seconds)
+                            import time
+                            time.sleep(0.5)
                             st.rerun()
                     else:
-                        # Start recording button
-                        can_record = rec_final_client is not None
+                        # Start session button
+                        can_start = rec_final_client is not None and is_deepgram_available()
 
                         if st.button(
-                            "🎙️ Start Recording",
+                            "🎙️ Start Session",
                             type="primary",
                             key="start_recording",
-                            disabled=not can_record
+                            disabled=not can_start
                         ):
-                            if not can_record:
-                                st.warning("Please select or enter a client name first.")
-                            else:
-                                # Create session folder
-                                session_path, session_folder, safe_client = create_session_folder_for_transcription(
-                                    rec_final_client,
-                                    rec_client_type,
-                                    rec_date
-                                )
+                            # Create session folder
+                            session_path, session_folder, safe_client = create_session_folder_for_transcription(
+                                rec_final_client,
+                                rec_client_type,
+                                rec_date
+                            )
 
-                                # Create output path
-                                audio_filename = f"recording_{datetime.now().strftime('%H%M%S')}.wav"
-                                output_path = os.path.join(session_path, audio_filename)
+                            # Create output path (will be saved as MP3)
+                            audio_filename = f"recording_{datetime.now().strftime('%H%M%S')}.mp3"
+                            output_path = os.path.join(session_path, audio_filename)
 
-                                # Start recording
+                            # Initialize live transcription (always enabled)
+                            sample_rate = capturer.get_device_sample_rate(selected_device_id)
+                            transcriber = DeepgramLiveTranscriber(sample_rate=sample_rate)
+
+                            # Set up callback to update live transcript
+                            def on_transcript(text, speaker, is_final):
+                                if is_final:
+                                    if speaker is not None:
+                                        line = f"Speaker {speaker}: {text}"
+                                    else:
+                                        line = text
+                                    st.session_state.live_transcript += line + "\n\n"
+
+                            transcriber.on_transcript = on_transcript
+
+                            # Start transcriber
+                            if transcriber.start():
+                                st.session_state.live_transcriber = transcriber
+                                st.session_state.recording_session_path = session_path
+                                audio_callback = transcriber.send_audio
+
+                                # Start recording with live transcription
                                 capturer.start_recording(
                                     device_id=selected_device_id,
-                                    output_path=output_path
+                                    output_path=output_path,
+                                    on_audio_chunk=audio_callback
                                 )
                                 st.session_state.is_recording = True
                                 st.session_state.recording_start_time = datetime.now()
                                 st.rerun()
+                            else:
+                                st.error("Failed to connect to Deepgram. Check your API key and internet connection.")
 
-                        if not can_record:
-                            st.info("Select a client to enable recording.")
+                        if not can_start:
+                            if not rec_final_client:
+                                st.info("Select a client to start the session.")
 
-                    # Show last recording if available
+                    # Show last session recording if available
                     if st.session_state.recorded_audio_path and os.path.exists(st.session_state.recorded_audio_path):
                         st.divider()
-                        st.subheader("Last Recording")
+                        st.subheader("Last Session")
                         st.audio(st.session_state.recorded_audio_path)
                         st.caption(f"Saved to: {st.session_state.recorded_audio_path}")
 

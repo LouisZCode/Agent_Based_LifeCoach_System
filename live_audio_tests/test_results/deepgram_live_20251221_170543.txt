@@ -1,0 +1,13 @@
+Deepgram Live Streaming Test
+Date: 2025-12-21 17:05:43
+Device: HyperX Cloud III Wireless
+Sample Rate: 32000 Hz
+Duration: 10 seconds
+
+========================================
+
+Speaker 0: An eye
+
+Speaker 1: am now speaking here
+
+Speaker 1: Oh,

@@ -16,6 +16,8 @@ from .transcription import (
 from .transcription_deepgram import (
     is_deepgram_available,
     transcribe_with_deepgram,
+    DeepgramLiveTranscriber,
+    convert_audio_to_deepgram_format,
 )
 
 
