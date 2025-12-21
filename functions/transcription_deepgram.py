@@ -15,6 +15,7 @@ import subprocess
 import threading
 import queue
 import time
+import uuid
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -288,6 +289,11 @@ class DeepgramLiveTranscriber:
 
     def _on_message(self, message):
         """Handle transcription results from Deepgram."""
+        # Log message type for debugging
+        msg_type = getattr(message, 'type', 'unknown')
+        if msg_type not in ('Results',):  # Don't spam with normal results
+            print(f"[DeepgramLive] Message type: {msg_type}")
+
         if hasattr(message, 'channel'):
             channel = message.channel
             if hasattr(channel, 'alternatives') and channel.alternatives:
@@ -318,13 +324,18 @@ class DeepgramLiveTranscriber:
 
     def _on_close(self, event):
         """Handle WebSocket close."""
-        print(f"[DeepgramLive] WebSocket closed")
+        # Log close details
+        close_code = getattr(event, 'code', 'unknown')
+        close_reason = getattr(event, 'reason', 'unknown')
+        print(f"[DeepgramLive] WebSocket closed - code={close_code}, reason={close_reason}")
+        print(f"[DeepgramLive] Close event details: {event}")
         self.is_connected = False
         if self.on_disconnected:
             self.on_disconnected()
 
     def _on_error(self, error):
         """Handle WebSocket error."""
+        print(f"[DeepgramLive] WebSocket error: {error}")
         if self.on_error:
             self.on_error(error)
 
@@ -332,6 +343,7 @@ class DeepgramLiveTranscriber:
         """Background thread to send audio chunks to Deepgram."""
         error_count = 0
         max_errors = 5  # Allow some errors before giving up
+        last_status_time = time.time()
 
         while not self._stop_event.is_set():
             try:
@@ -341,6 +353,11 @@ class DeepgramLiveTranscriber:
                     self._chunks_sent += 1
                     self._bytes_sent += len(chunk)
                     error_count = 0  # Reset on success
+
+                    # Log status every 5 seconds
+                    if time.time() - last_status_time > 5:
+                        print(f"[DeepgramLive] Status: sent={self._chunks_sent}, bytes={self._bytes_sent}")
+                        last_status_time = time.time()
                 else:
                     print(f"[DeepgramLive] Chunk dropped - not connected (connected={self.is_connected})")
             except queue.Empty:
@@ -360,8 +377,11 @@ class DeepgramLiveTranscriber:
     def _listen_loop(self):
         """Background thread to receive messages from Deepgram."""
         try:
+            print("[DeepgramLive] Starting listen loop...")
             self.connection.start_listening()
+            print("[DeepgramLive] start_listening() returned normally")
         except Exception as e:
+            print(f"[DeepgramLive] Listen loop exception: {type(e).__name__}: {e}")
             if not self._stop_event.is_set() and self.on_error:
                 self.on_error(e)
         finally:
@@ -384,6 +404,10 @@ class DeepgramLiveTranscriber:
 
         try:
             self.client = DeepgramClient(api_key=self._api_key)
+
+            # Generate request ID for tracking in Deepgram console
+            request_id = str(uuid.uuid4())[:8]
+            print(f"[DeepgramLive] Request ID: {request_id}")
 
             # Create context manager with proper parameter types
             self._context_manager = self.client.listen.v1.connect(

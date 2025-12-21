@@ -484,10 +484,12 @@ if "recorded_audio_path" not in st.session_state:
 # Tab 1: Live Transcription state
 if "live_transcriber" not in st.session_state:
     st.session_state.live_transcriber = None
-if "live_transcript" not in st.session_state:
-    st.session_state.live_transcript = ""
 if "recording_session_path" not in st.session_state:
     st.session_state.recording_session_path = None
+if "completed_session_transcript" not in st.session_state:
+    st.session_state.completed_session_transcript = None
+if "completed_session_info" not in st.session_state:
+    st.session_state.completed_session_info = None
 
 # Tab 2: Undefined Clients
 if "messages_undefined" not in st.session_state:
@@ -691,15 +693,17 @@ with tab1:
                                 st.caption("🔊 System Audio")
                                 st.progress(0)
 
-                        # Show live transcript if available
-                        if st.session_state.live_transcript:
-                            with st.expander("📝 Live Transcript", expanded=True):
+                        # Show live transcript if available (poll from transcriber)
+                        if st.session_state.live_transcriber:
+                            live_text = st.session_state.live_transcriber.get_transcript()
+                            transcript_count = len(st.session_state.live_transcriber.get_transcript_parts())
+                            with st.expander(f"📝 Live Transcript ({transcript_count} segments)", expanded=True):
                                 st.text_area(
                                     "Transcript",
-                                    value=st.session_state.live_transcript,
+                                    value=live_text if live_text else "Waiting for speech...",
                                     height=200,
                                     disabled=True,
-                                    key="live_transcript_display"
+                                    key=f"live_transcript_{transcript_count}"  # Dynamic key forces refresh
                                 )
 
                         if st.button("⏹️ End Session", type="primary", key="stop_recording"):
@@ -716,17 +720,20 @@ with tab1:
                                 # Save transcription to session folder
                                 if transcript and st.session_state.recording_session_path:
                                     save_transcription(st.session_state.recording_session_path, transcript)
-                                    st.success(f"Recording + transcription saved!")
-                                    st.info(f"Audio: {saved_path}")
+                                    # Store for preview
+                                    st.session_state.completed_session_transcript = transcript
+                                    st.session_state.completed_session_info = {
+                                        "audio_path": saved_path,
+                                        "session_path": st.session_state.recording_session_path
+                                    }
                                 else:
-                                    st.success(f"Recording saved to: {saved_path}")
-                                    if not transcript:
-                                        st.warning("No transcript captured")
+                                    st.session_state.completed_session_transcript = None
+                                    st.session_state.completed_session_info = None
 
-                                st.session_state.live_transcript = ""
                                 st.session_state.recording_session_path = None
                             else:
-                                st.success(f"Recording saved to: {saved_path}")
+                                st.session_state.completed_session_transcript = None
+                                st.session_state.completed_session_info = None
 
                             st.rerun()
                         else:
@@ -759,16 +766,8 @@ with tab1:
                             sample_rate = capturer.get_device_sample_rate(selected_device_id)
                             transcriber = DeepgramLiveTranscriber(sample_rate=sample_rate)
 
-                            # Set up callback to update live transcript
-                            def on_transcript(text, speaker, is_final):
-                                if is_final:
-                                    if speaker is not None:
-                                        line = f"Speaker {speaker}: {text}"
-                                    else:
-                                        line = text
-                                    st.session_state.live_transcript += line + "\n\n"
-
-                            transcriber.on_transcript = on_transcript
+                            # NOTE: Don't set on_transcript callback - it runs in background thread
+                            # and can't access st.session_state. Instead, poll get_transcript() in UI loop.
 
                             # Start transcriber
                             if transcriber.start():
@@ -792,8 +791,35 @@ with tab1:
                             if not rec_final_client:
                                 st.info("Select a client to start the session.")
 
-                    # Show last session recording if available
-                    if st.session_state.recorded_audio_path and os.path.exists(st.session_state.recorded_audio_path):
+                    # Show completed session with transcript preview
+                    if st.session_state.completed_session_transcript and st.session_state.completed_session_info:
+                        st.divider()
+                        st.subheader("✅ Session Complete")
+                        st.success(f"Saved to: {st.session_state.completed_session_info['session_path']}")
+
+                        # Audio player
+                        if os.path.exists(st.session_state.completed_session_info['audio_path']):
+                            st.audio(st.session_state.completed_session_info['audio_path'])
+
+                        # Transcript preview
+                        with st.expander("📝 Transcription Preview", expanded=True):
+                            st.text_area(
+                                "Full Transcript",
+                                value=st.session_state.completed_session_transcript,
+                                height=300,
+                                disabled=True,
+                                key="completed_transcript_preview"
+                            )
+
+                        # Clear button
+                        if st.button("🗑️ Clear & Start New Session", key="clear_completed"):
+                            st.session_state.completed_session_transcript = None
+                            st.session_state.completed_session_info = None
+                            st.session_state.recorded_audio_path = None
+                            st.rerun()
+
+                    # Show last session recording if no completed session preview
+                    elif st.session_state.recorded_audio_path and os.path.exists(st.session_state.recorded_audio_path):
                         st.divider()
                         st.subheader("Last Session")
                         st.audio(st.session_state.recorded_audio_path)
