@@ -1,0 +1,231 @@
+=== TRANSCRIPTION TEST RESULTS ===
+Method: Deepgram Nova-3 (Batch)
+Date: 2025-12-21 15:35:28
+Audio File: audio_example_SHORT
+Audio Duration: 6:29
+Cost Estimate: $0.0279 (@ $0.0043/min)
+
+Processing Time:
+  - Deepgram API: 23.2s
+  - Total: 23.2s
+  - Speed: 16.8x realtime
+
+Speaker Diarization: Yes (built-in)
+
+Features:
+  - Model: Nova-3
+  - Smart formatting: Yes
+  - Punctuation: Yes
+  - Utterance grouping: Yes
+
+=== TRANSCRIPTION ===
+
+Speaker 00: Hear me?
+
+Speaker 01: Wait. Let me just turn on. Yep. Yes.
+
+Speaker 01: I can hear you. Can you hear me?
+
+Speaker 00: I can hear you.
+
+Speaker 00: Can you hear me?
+
+Speaker 01: Yes.
+
+Speaker 00: Wait.
+
+Speaker 00: Now now it's working. Okay.
+
+Speaker 00: Yay. It works for me.
+
+Speaker 00: That's but can you hear me or no?
+
+Speaker 00: Yes.
+
+Speaker 01: Through your headphones?
+
+Speaker 00: Yes.
+
+Speaker 00: Okay. Okay.
+
+Speaker 01: Then let's talk about something very important.
+
+Speaker 00: K. What's your favorite moment of Better Call Souls series so far?
+
+Speaker 01: Wow.
+
+Speaker 01: That is a very
+
+Speaker 01: crazy question.
+
+Speaker 01: So
+
+Speaker 01: much has happened.
+
+Speaker 01: Why can't why can I hear myself?
+
+Speaker 00: Oh, I don't know. That's that's you think because I can I cannot hear myself?
+
+Speaker 01: Interesting.
+
+Speaker 01: Okay.
+
+Speaker 01: I don't know what what has been my favorite moment.
+
+Speaker 01: I think
+
+Speaker 01: when they found that family in the woods, that was pretty funny.
+
+Speaker 00: The yeah. That was funny too.
+
+Speaker 01: How about you?
+
+Speaker 00: Good question.
+
+Speaker 00: Think with the Mexican sorry. In Mexican, it's yellow.
+
+Speaker 00: That's the best part.
+
+Speaker 01: Can you relate?
+
+Speaker 00: Remember home.
+
+Speaker 01: You you remember the situation that
+
+Speaker 00: The Mexican
+
+Speaker 00: colorful,
+
+Speaker 00: jealous.
+
+Speaker 00: It's the best.
+
+Speaker 01: Very,
+
+Speaker 01: very much a classic one. I'm I'm not a Mexican. I'm I'm not a
+
+Speaker 01: meanie.
+
+Speaker 00: That's also.
+
+Speaker 01: The the total. Okay. Yeah.
+
+Speaker 00: But what does it have to do?
+
+Speaker 00: Maybe this one is better. Yeah. That's why mine was so shitty.
+
+Speaker 00: What?
+
+Speaker 00: Because it was listening from from my Mac microphone,
+
+Speaker 00: not from my you like, my headphones microphone. Now it is, and now it's making a much better job of doing my transcription in here.
+
+Speaker 01: Yes. I was gonna say that my
+
+Speaker 01: transcription
+
+Speaker 01: is generally
+
+Speaker 01: not so good, actually.
+
+Speaker 00: To your side? Like, mine now, it's great. Yours also is really good.
+
+Speaker 01: Ah, okay. Maybe let's talk a bit more, and then I can
+
+Speaker 00: have Change your good review. Audio, microphone, and everything.
+
+Speaker 01: I I have both on my speakers, so it should be fine.
+
+Speaker 00: No. Use your
+
+Speaker 00: headset.
+
+Speaker 01: When
+
+Speaker 01: I say speaker, I meant headset.
+
+Speaker 00: Ah,
+
+Speaker 01: okay. But for example, now instead of writing, he changed.
+
+Speaker 00: Like It's AI. So it is it is hearing everything in context, then it makes, like, the final one.
+
+Speaker 01: Okay. But, like, when you said headset,
+
+Speaker 01: he wrote cat set,
+
+Speaker 01: which is also cool, but why didn't he understand that? Because he understood me saying headset,
+
+Speaker 01: but not you.
+
+Speaker 00: Yeah. I guess it's my accent.
+
+Speaker 01: But but, I mean, in the context, he should understand that it's not a cat
+
+Speaker 00: Well, he doesn't know what we are maybe he's like, yeah. Cat set.
+
+Speaker 01: Totally.
+
+Speaker 01: Totally.
+
+Speaker 00: But that he gets good it's good enough, right, for what you need for what they are saying?
+
+Speaker 01: I mean, I have to try because they some of them have really strong accents.
+
+Speaker 01: So I'm not so sure how good it will
+
+Speaker 01: translate. Also, some of them, like, shitty.
+
+Speaker 01: For some reason, he speaks very, very low.
+
+Speaker 01: Like, he's shy. He's a he's a shy person.
+
+Speaker 01: So he
+
+Speaker 01: just says, like, three words, and then they're kind of with a weird accent.
+
+Speaker 01: Not a weird accent, just his accent is very strong.
+
+Speaker 00: Wow.
+
+Speaker 01: It's become it's hard for me to understand, and I'm a human that kind of understands the context of what we're talking about. No?
+
+Speaker 01: I don't know how easy it will be for AI, but we can try. Why not?
+
+Speaker 00: You can use both Cluli and this one and and just check how both do it. Yeah. I think I will use both.
+
+Speaker 00: Because if Cluli is unlimited for 20, maybe it's much better than this. But this one is, like, good enough for free, I guess.
+
+Speaker 01: Yeah. Yeah. I mean, it is translating.
+
+Speaker 00: I would say 95%
+
+Speaker 01: should be fine. Yeah. I think also then chat if you can kind of
+
+Speaker 01: understand the context even if the transcription is kinda weird.
+
+Speaker 00: That was what I'm saying. Like, I can also just Mhmm. Put in the prompt, like, hey. Here is the transcription.
+
+Speaker 01: This is a transcription, so just be aware that this is not perfect. So please don't think blah blah blah blah blah so they should know. That's what I was thinking as well to just put it into the prompt, and then we can also
+
+Speaker 01: have a little bit of imagination
+
+Speaker 01: and figure out what we what we've done.
+
+Speaker 00: Tomorrow,
+
+Speaker 00: you try both and you we can see both how they work. That is gonna be better if I have both examples.
+
+Speaker 01: Okay. Nice. Then I I can give you both examples, and then you can maybe
+
+Speaker 01: use Claude to just see which one is more accurate.
+
+Speaker 00: Yep.
+
+Speaker 00: Exactly.
+
+Speaker 00: Makes sense.
+
+Speaker 00: Save this one then, baby.
+
+Speaker 00: Okay.

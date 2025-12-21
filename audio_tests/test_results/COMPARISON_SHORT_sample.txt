@@ -10,6 +10,7 @@ Audio: audio_example_SHORT.wav (6 minutes 29 seconds)
 
 | Method                  | Speed      | Cost     | Diarization | 30-min Test |
 |-------------------------|------------|----------|-------------|-------------|
+| Deepgram Nova-3 (Batch) | 58.4x RT   | $0.12    | Yes         | WORKS ✓     |
 | Parakeet + Pyannote     | 1.7x RT    | FREE     | Yes         | WORKS       |
 | Voxtral + Pyannote      | 1.5x RT    | $0.0065  | Yes         | FAILED      |
 | OpenAI Diarize          | 1.4x RT    | $0.0389  | Yes         | FAILED      |
@@ -18,7 +19,36 @@ Audio: audio_example_SHORT.wav (6 minutes 29 seconds)
                            DETAILED RESULTS
 ================================================================================
 
-1. PARAKEET + PYANNOTE (LOCAL) - RECOMMENDED
+0. DEEPGRAM NOVA-3 (BATCH API) - FASTEST ⭐ WINNER FOR SPEED
+--------------------------------------------------------------------------------
+   Processing Time (6-min SHORT):
+     - Deepgram API:            23.2s
+     - Speed:                   16.8x realtime
+
+   Processing Time (27-min MEDIUM):
+     - Deepgram API:            28.2s
+     - Speed:                   58.4x realtime (!)
+     - Note: WAV→MP3 conversion added ~10s
+
+   Cost: $0.0043/min ($0.12 for 27-min, $0.26 for 60-min)
+
+   Diarization: Speaker 00, Speaker 01 (built-in, clean output)
+
+   Transcription Quality: Good punctuation, proper capitalization
+
+   30-min Audio Test: PASSED ✓
+
+   Notes:
+     - 34x FASTER than local Parakeet+Pyannote solution
+     - 27-min audio processed in 28 seconds
+     - $200 free credits upon signup (~770 minutes free)
+     - Large WAV files need conversion to MP3 (timeout fix)
+     - More fragmented utterances (splits mid-sentence sometimes)
+     - Best option when speed matters more than cost
+
+--------------------------------------------------------------------------------
+
+1. PARAKEET + PYANNOTE (LOCAL) - RECOMMENDED FOR PRIVACY
 --------------------------------------------------------------------------------
    Processing Time:
      - Parakeet Transcription: 19.7s
@@ -78,27 +108,28 @@ Audio: audio_example_SHORT.wav (6 minutes 29 seconds)
                               CONCLUSION
 ================================================================================
 
-WINNER: Parakeet + Pyannote (Local Solution)
+UPDATED RECOMMENDATION: Choose based on priority
 
-REASONS:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SPEED PRIORITY → Deepgram Nova-3 (58x RT, $0.26/hour, 60-min in ~1 minute!) │
+│ COST/PRIVACY → Parakeet + Pyannote (1.7x RT, FREE, offline)                 │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-1. RELIABILITY
-   - Only solution that works with long audio (30+ minutes)
-   - No file size limits
-   - No API rate limits or quotas
-   - Works offline
+1. DEEPGRAM NOVA-3 - BEST FOR SPEED ⭐
+   - 58.4x realtime = 27-min audio in 28 seconds
+   - 60-min audio estimated in ~1 minute (vs 40 min local)
+   - Cost: ~$0.26/hour ($200 free credits = ~770 minutes free!)
+   - Built-in diarization (no Pyannote needed)
+   - 30-min test: PASSED ✓
 
-2. COST
-   - Completely FREE
-   - No per-minute charges
-   - No API subscriptions needed
+2. PARAKEET + PYANNOTE - BEST FOR PRIVACY/COST
+   - 1.7x realtime (Pyannote is the bottleneck)
+   - Completely FREE, no API costs
+   - Works offline, audio stays local
+   - Tested & works with 30+ minute audio
+   - No file size or API limits
 
-3. PRIVACY
-   - Audio never leaves the machine
-   - Client conversations stay private
-   - No data sent to third-party servers
-
-4. API LIMITATIONS DISCOVERED
+3. API LIMITATIONS DISCOVERED
 
    Voxtral (Mistral):
    - 16K token limit = ~25 min max audio
@@ -110,20 +141,14 @@ REASONS:
    - 6x more expensive than Voxtral
    - Inconsistent text formatting
 
-5. TRADE-OFFS ACCEPTED
+4. COST COMPARISON FOR 60-MIN CALL
 
-   The local solution is slower than cloud APIs could be:
-   - Parakeet transcription: ~20 seconds (fast!)
-   - Pyannote diarization: ~3.5 minutes (bottleneck)
-
-   For a 60-minute coaching call:
-   - Estimated processing time: ~40 minutes
-   - Cost savings: $0 vs $0.36-$2.34 per call
-
-   This is acceptable because:
-   - Processing happens after the call ends
-   - No real-time requirements for current workflow
-   - Significant cost savings at scale
+   | Method                  | Time to Process | Cost     |
+   |-------------------------|-----------------|----------|
+   | Deepgram Nova-3 (Batch) | ~1 min          | $0.26    |
+   | Parakeet + Pyannote     | ~40 min         | FREE     |
+   | OpenAI Diarize          | N/A (fails)     | $0.36    |
+   | Voxtral + Pyannote      | N/A (fails)     | $0.06    |
 
 ================================================================================
                          FUTURE CONSIDERATIONS
@@ -142,8 +167,13 @@ These APIs support streaming during live calls but cost ~$0.50/hour.
                               FILES TESTED
 ================================================================================
 
-1. parakeet_pyannote_20251221_110939_audio_example_SHORT.txt
-2. voxtral_pyannote_20251221_091032_audio_example_SHORT.txt
-3. openai_20251221_092744_audio_example_SHORT.txt
+SHORT sample (6:29):
+1. deepgram_batch_20251221_153528_audio_example_SHORT.txt
+2. parakeet_pyannote_20251221_110939_audio_example_SHORT.txt
+3. voxtral_pyannote_20251221_091032_audio_example_SHORT.txt
+4. openai_20251221_092744_audio_example_SHORT.txt
+
+MEDIUM sample (27:24):
+5. deepgram_batch_20251221_154728_audio_example_MEDIUM.txt
 
 ================================================================================

@@ -1,0 +1,881 @@
+=== TRANSCRIPTION TEST RESULTS ===
+Method: Deepgram Nova-3 (Batch)
+Date: 2025-12-21 15:47:28
+Audio File: audio_example_MEDIUM
+Audio Duration: 27:24
+Cost Estimate: $0.1178 (@ $0.0043/min)
+
+Processing Time:
+  - Deepgram API: 28.2s
+  - Total: 28.2s
+  - Speed: 58.4x realtime
+
+Speaker Diarization: Yes (built-in)
+
+Features:
+  - Model: Nova-3
+  - Smart formatting: Yes
+  - Punctuation: Yes
+  - Utterance grouping: Yes
+
+=== TRANSCRIPTION ===
+
+Speaker 00: Hi there.
+
+Speaker 00: Hi.
+
+Speaker 00: Hi there. Hi, Balaji. How are you? Sorry. I'm good. And you?
+
+Speaker 01: I'm fine. Thank you.
+
+Speaker 00: Nice. Happy to hear. How has your day been?
+
+Speaker 01: I'm good. Good. Thank you.
+
+Speaker 01: Nice to meet you. My name is Barak.
+
+Speaker 00: Can you repeat that? How do you pronounce it?
+
+Speaker 01: Barak,
+
+Speaker 01: b a I k.
+
+Speaker 01: Perfect.
+
+Speaker 00: Exactly.
+
+Speaker 00: That that
+
+Speaker 01: You're
+
+Speaker 01: you're a not psychology or something. Psychology?
+
+Speaker 00: So I'm a coach.
+
+Speaker 00: There's
+
+Speaker 00: an important difference between psychologist
+
+Speaker 00: and coach,
+
+Speaker 00: is this something that you are,
+
+Speaker 01: like, already familiar with, or is it something that it would be helpful for me to clear up? I know coaching. I have I will in the past, I will in the coaching.
+
+Speaker 00: Okay.
+
+Speaker 00: What did you do for coaching?
+
+Speaker 01: Confidence and
+
+Speaker 01: actually actually, my my goal is
+
+Speaker 01: in here. It's to
+
+Speaker 01: my English is not so well. So so
+
+Speaker 01: to speak more good and
+
+Speaker 01: express myself
+
+Speaker 01: Okay. Good. Mhmm.
+
+Speaker 01: And
+
+Speaker 01: that's
+
+Speaker 01: maybe sharing things and
+
+Speaker 00: Mhmm.
+
+Speaker 00: So, yeah, you wrote specifically that it wasn't about learning English. Yes? It's more about feeling confident in the English language. Is that what I understand?
+
+Speaker 01: Yeah. I take some lessons in
+
+Speaker 01: English. Okay.
+
+Speaker 01: Mhmm. But the
+
+Speaker 01: it's it's it's like
+
+Speaker 01: the the English language is also like a block, but I want to
+
+Speaker 01: I want to control, like, the conversation.
+
+Speaker 00: Mhmm.
+
+Speaker 00: Like, to be able to guide it in a way that's aligns you. Exactly. I
+
+Speaker 00: see. I see your point.
+
+Speaker 00: Okay,
+
+Speaker 00: Bahar. That sounds wonderful. Can you tell me a little bit more about you, about Yes. What else brings you here? I would love to hear it. Okay.
+
+Speaker 01: I'm a site building websites,
+
+Speaker 01: workers. I've I've something like 100 diplomas.
+
+Speaker 01: I Okay. Although yeah. I know I know I'm learning all the time. Now I'm learning remedial
+
+Speaker 01: teaching,
+
+Speaker 01: but I know how to a
+
+Speaker 01: NVIDIA editor.
+
+Speaker 01: Okay. Yeah. In technical, it's perfect, my English. But in in speaking, it's a little bit different.
+
+Speaker 01: And what
+
+Speaker 01: else?
+
+Speaker 01: Other than a lot of things
+
+Speaker 01: I'm
+
+Speaker 01: stuck.
+
+Speaker 00: No. No worries. So
+
+Speaker 00: you focused a lot on I guess you were talking about work related
+
+Speaker 01: stuff. Yes?
+
+Speaker 00: Yes. Okay. Is there anything else? Like, I don't know. What do you like to do for hobbies?
+
+Speaker 01: My hobbies,
+
+Speaker 01: I love I like to play tennis,
+
+Speaker 01: chess,
+
+Speaker 00: and go to movies.
+
+Speaker 01: We have in Israel, we have some show. We call it MasterChef,
+
+Speaker 01: if you know. MasterChef. Yeah. Uh-huh. Like the cooking show? Yes. Yes. Yeah. Yeah. Yeah.
+
+Speaker 00: Yes. As well. Yes.
+
+Speaker 00: It's fun. Yes.
+
+Speaker 01: I like to show to see this
+
+Speaker 01: show.
+
+Speaker 00: Okay. Do
+
+Speaker 00: you like to cook as well? Doing good. Yeah.
+
+Speaker 00: I like to watch. Yes.
+
+Speaker 01: It's like a
+
+Speaker 01: soccer or soccer, like, you know, to see and look like.
+
+Speaker 00: Yep. Yep.
+
+Speaker 00: Are you living in Israel at the moment? Or are okay. You
+
+Speaker 00: Okay.
+
+Speaker 00: Why
+
+Speaker 01: do you usually have to speak English? Is it your job? Is it just in general you want to learn? Yes. For for customers, I need to know it's embarrassing. I anyways, I can't speak with them.
+
+Speaker 01: It's
+
+Speaker 01: problematic.
+
+Speaker 01: I want to understand how to pronounce
+
+Speaker 01: pronounce
+
+Speaker 01: speak well.
+
+Speaker 00: Mhmm. Mhmm. And this this then
+
+Speaker 00: right now, what you've done so far is, like, taking English classes. Is that correct? Or
+
+Speaker 01: No. I'm not I just now begin. Okay. Okay. Mhmm.
+
+Speaker 01: Mhmm.
+
+Speaker 01: But I'm English. It's like worse. I need to improve it. And this is some block. Like, I can't I can't
+
+Speaker 01: well, you need you need to communicate with people. So this is block.
+
+Speaker 01: Mhmm.
+
+Speaker 01: What do you say? What you don't need to
+
+Speaker 01: to
+
+Speaker 01: how you say? Show my and
+
+Speaker 00: and and express myself. Express yourself in the way you want to.
+
+Speaker 01: Yes.
+
+Speaker 01: Maybe. I need to
+
+Speaker 01: I lost my words.
+
+Speaker 01: It's like I
+
+Speaker 01: want to tell them, okay, my to introduce myself.
+
+Speaker 01: Okay.
+
+Speaker 01: To make This is
+
+Speaker 00: your image. You know? Mhmm. Exactly.
+
+Speaker 01: This is
+
+Speaker 00: Okay. Can you tell me, like, what has been happening so far when you have these conversations?
+
+Speaker 00: What is the situation at the moment for you?
+
+Speaker 01: Yeah. What do mean?
+
+Speaker 00: So
+
+Speaker 00: okay. Coaching is a lot about
+
+Speaker 01: understanding where you are right now and where do you wanna go. So it's like, okay. You have a point a? Yeah. Oh, I have a lot of goal. I am I I have one hat. I have a lot of I do I do a lot of things.
+
+Speaker 01: Okay. I'm video. I'm
+
+Speaker 01: I'm also tutor
+
+Speaker 01: in this platform. And
+
+Speaker 01: I do a lot of things,
+
+Speaker 01: building website, and
+
+Speaker 01: now I'm building some course in Hebrew, digital course for caregivers in my my country. Okay.
+
+Speaker 01: They
+
+Speaker 01: don't know Hebrew at all, and they take care of for old people. Mhmm. So I need to no no no one build it. So and they I think an entrepreneur.
+
+Speaker 00: Okay. Entrepreneur. Yeah. Mhmm. Taking
+
+Speaker 00: initiative.
+
+Speaker 01: And I I don't know. What is initiative?
+
+Speaker 00: Initiative is when you
+
+Speaker 00: ask nobody ask you to do this, but you decided, oh, I want I I see there is something missing,
+
+Speaker 00: and I want to do something about it. So I take initiative to do it. Exactly.
+
+Speaker 01: Yeah. There you go. Thank you. That's good. No worries. I'll speak to your English.
+
+Speaker 00: Yeah. Yeah. I I wanted to
+
+Speaker 00: kind of understand,
+
+Speaker 00: like, how would these sessions work for you if they would if
+
+Speaker 00: they would be, like, the ideal
+
+Speaker 00: solution for what you what is happening right now for you? How would you like them to go?
+
+Speaker 01: For example,
+
+Speaker 01: look at you you do. You lead the conversation.
+
+Speaker 01: It's problematic for me.
+
+Speaker 01: It's it's I don't know. It's a little bit problematic to me.
+
+Speaker 01: I I I want to be I'm just saying like you, like, to to guide the conversation to ask,
+
+Speaker 01: you know, this is this is something that I want to learn,
+
+Speaker 01: and this is difficult for me. For example,
+
+Speaker 01: introduce yourself. And I I have materials,
+
+Speaker 01: a lot of materials in my my content,
+
+Speaker 01: very organized
+
+Speaker 01: Mhmm. But
+
+Speaker 01: for this issue. And
+
+Speaker 01: for example,
+
+Speaker 01: some people come to to to speak
+
+Speaker 01: to speak just to speak. Okay. And I don't know what to do. I I I just tell them I can't help them them because I don't know how to
+
+Speaker 01: react to that.
+
+Speaker 00: Okay. And
+
+Speaker 01: just now, I start to to organize something maybe course of
+
+Speaker 01: so speaking, but
+
+Speaker 00: difficult for me. Yeah. Yeah. Is this does this happen also when you speak Hebrew or just mostly in English?
+
+Speaker 01: English is really worse. Maybe Hebrew
+
+Speaker 01: my god.
+
+Speaker 01: English is more more more bad because I I I don't have the English words. But but Hebrew, yes, also, I think. Mhmm. Mhmm.
+
+Speaker 00: Yes. Because I think this is important to figure out.
+
+Speaker 00: Because, okay, if it's something that just happens in English,
+
+Speaker 00: then I guess the
+
+Speaker 00: okay. The it would make sense that what is happening here is that you're not comfortable with the language. You know? Maybe you cannot find the words exactly how you want to express yourself.
+
+Speaker 00: But if it's something that you say, like, happens in both, then it's a different situation.
+
+Speaker 01: I tell you why. Because some student is it's like it's like some student
+
+Speaker 01: you know a student. Okay? You you're teaching. Some some of them can say say to me some private questions.
+
+Speaker 01: I don't like people there's my student is not professional. I don't think I need to share these things in
+
+Speaker 01: you know? Mhmm. I think it's not professional. So so
+
+Speaker 01: I don't like these questions.
+
+Speaker 01: Mhmm. It's like even and I agree on that.
+
+Speaker 01: Honestly, I don't think it's professional. I'm not to share my my student. I'm not sharing my student my
+
+Speaker 01: my my life or something like that. Okay. And they want to know. And then I I no. It's like a a block.
+
+Speaker 00: Yeah. People are very curious, I think, in general. That's a very human thing.
+
+Speaker 00: Yes.
+
+Speaker 01: But I don't know. I don't com that it's not comfortable for me. Okay.
+
+Speaker 00: And with other people, do you have, like, this opportunity
+
+Speaker 00: to be more intimate, more vulnerable?
+
+Speaker 01: What do mean?
+
+Speaker 00: Okay.
+
+Speaker 00: I I want to understand why you brought up this example
+
+Speaker 00: in regards to the
+
+Speaker 00: to the students and the Because it's it's it's
+
+Speaker 01: difficult to me to teach a student that, for example,
+
+Speaker 01: that they ask me private questions.
+
+Speaker 01: I don't like it.
+
+Speaker 01: In this session Mhmm.
+
+Speaker 01: It's it's okay. But oh, slowly.
+
+Speaker 01: But in my my my lessons,
+
+Speaker 01: it's I don't know. It's it's like I ask you a private question. It's not properly. It's it's rude,
+
+Speaker 01: what I think.
+
+Speaker 00: Okay.
+
+Speaker 00: I don't know. And how do you deal with this normally?
+
+Speaker 01: I tell them.
+
+Speaker 01: I want to focus my my student and not not on not mine because if I speak to myself all the purpose of the lesson.
+
+Speaker 01: Mhmm. Okay.
+
+Speaker 01: Okay. Some of them react. Some of them react like, you know
+
+Speaker 00: Uh-huh.
+
+Speaker 00: I mean, it's the you are just putting a boundary. No? You're just saying, no. This is a space for being professional and talking about stuff that is related to the what you're teaching
+
+Speaker 01: and not about personal stuff. That makes sense. Mhmm. Yes. But I take it personally. It's it's angry. I'm Okay.
+
+Speaker 01: I'm not like it. Also, I have difficult for for communication with the people. It's like a,
+
+Speaker 01: you know, to to it's like
+
+Speaker 01: free dialogue,
+
+Speaker 01: you know, free free conversation.
+
+Speaker 01: I don't know what to do with them.
+
+Speaker 01: How is that? Oh, so I I don't know. So now I'm building something, but I don't like it. I need to I need to control to to to
+
+Speaker 01: not to to control
+
+Speaker 01: the the situation. If I have for example, I work with the PowerPoint that I'm built.
+
+Speaker 01: And I go with them. And student, they want to talk, not just to talk. Maybe I I lead you to the you. You learn everywhere,
+
+Speaker 01: and you can
+
+Speaker 01: this job, but but I I don't think I'm good for for speaking
+
+Speaker 01: conversation.
+
+Speaker 01: Mhmm. Okay. It's also something I want to improve.
+
+Speaker 00: You say you want to control
+
+Speaker 00: what happens if you don't control the situation?
+
+Speaker 01: It's a mess. The student can the student do what they for for example,
+
+Speaker 01: a student
+
+Speaker 01: I I can share because if you know we don't know
+
+Speaker 01: so
+
+Speaker 01: the student start
+
+Speaker 01: to okay. What what are we talking about? So the student say,
+
+Speaker 01: we can see some video. Okay. So she sent me
+
+Speaker 01: horrible video,
+
+Speaker 01: full of depression.
+
+Speaker 01: I can't see this.
+
+Speaker 01: Mhmm. I'm
+
+Speaker 01: very sensitive. I can't see this this this thing.
+
+Speaker 01: Okay. Something like family
+
+Speaker 01: issues and and
+
+Speaker 01: I don't know. It's
+
+Speaker 01: she said she she reads some Holocaust book.
+
+Speaker 01: Why?
+
+Speaker 01: And then then
+
+Speaker 01: I don't I don't know. It's very tough for me. I can't deal
+
+Speaker 01: with these things.
+
+Speaker 01: Not not sure personally, but I have ideology. Read why read why read these these things? No. Mhmm. Be positive. The life is short. You know? And you progress.
+
+Speaker 01: Why why read
+
+Speaker 01: these things? Why why you send me? So I tell her I can't
+
+Speaker 01: teach her. Mhmm.
+
+Speaker 00: Okay. And how did she react?
+
+Speaker 01: She not react.
+
+Speaker 01: Okay. Yes.
+
+Speaker 01: So But this like like this. He
+
+Speaker 01: asked me
+
+Speaker 01: what what they do. So they actually do what they what they want.
+
+Speaker 01: And if if I can
+
+Speaker 01: control the situation, they do what they want. I
+
+Speaker 01: need to if if I need the tutor, I think I need to there is a space for the student, but
+
+Speaker 01: I need some focus to to to focus about about it. Mhmm. Mhmm. Yeah.
+
+Speaker 00: Yeah. That makes sense. You want
+
+Speaker 00: to just have something specific going on in the class. Okay.
+
+Speaker 00: What's
+
+Speaker 00: do you have people that you can,
+
+Speaker 00: I don't know, have this conversation
+
+Speaker 00: this kind of conversation with? Or, like, does it bother you just because it's a student talking to you in this way? Or does it bother you in general, this kind of vulnerable conversations?
+
+Speaker 01: I
+
+Speaker 01: think it's also general.
+
+Speaker 01: General, I don't like to see I don't like seeing
+
+Speaker 01: move news or bad things. I don't like it. Why why should we need to hear things like that? I'm not want.
+
+Speaker 00: Okay.
+
+Speaker 00: If it's a friend sharing something with you?
+
+Speaker 01: Difficult.
+
+Speaker 01: If if it's good things, no problem. If it's bad things, it's it's heavy. Those
+
+Speaker 01: no. I it's I'm very sensitive, man. So it's
+
+Speaker 01: I can advise. If it's if it's if it's some I have a goal, I can advise. No problem. I'm advised. But I don't like people are crying.
+
+Speaker 01: They're just crying. Like like, crying, but okay. I'm crying. I'm I'm sad. I'm Okay. You understand? And I want I don't want to do anything about this.
+
+Speaker 01: Okay. I didn't do this. If you want to change thing, you know so
+
+Speaker 01: yes.
+
+Speaker 01: Mhmm. No problem. I
+
+Speaker 00: Mhmm.
+
+Speaker 00: And when you when you yourself
+
+Speaker 00: feel sad, what do you do about it usually?
+
+Speaker 01: I'm not sad.
+
+Speaker 01: But before,
+
+Speaker 01: I don't know. I'm not sad, but I'm going to a movie, maybe go to walking.
+
+Speaker 01: Mhmm.
+
+Speaker 01: Go to the sea.
+
+Speaker 01: Okay.
+
+Speaker 01: Do be if you're busy, you know, you have time to be here.
+
+Speaker 00: You know? That's true as well. Yes.
+
+Speaker 01: If you distract yourself with something else. Yes. Yes. And so I'm certain myself to do things, and and the life is, like, progress things. We don't have enough enough time. How
+
+Speaker 01: much? Eighteen years? Eighteen?
+
+Speaker 01: Nineteen?
+
+Speaker 01: So
+
+Speaker 01: I need to use the the live opportunity.
+
+Speaker 01: Mhmm. I think.
+
+Speaker 01: Okay.
+
+Speaker 00: Let's
+
+Speaker 00: move let's move on a little bit. How do you imagine
+
+Speaker 00: Barak in
+
+Speaker 00: one year time? If you accomplished
+
+Speaker 00: all the goals you want to accomplish,
+
+Speaker 00: how would you be? Can you describe him for me?
+
+Speaker 01: No. But I can tell you that I'm not sitting not sitting
+
+Speaker 01: say, I'm not sitting like
+
+Speaker 01: okay.
+
+Speaker 01: If I have a like, I don't know. If I win the lottery, you know, lottery? Mhmm.
+
+Speaker 01: So I stand I I see it.
+
+Speaker 01: It's it's not about money. I don't care about money.
+
+Speaker 01: Okay. I do what I
+
+Speaker 01: money is good, but I I am
+
+Speaker 01: all the time progress,
+
+Speaker 01: like parabolics
+
+Speaker 01: progress and learn things and
+
+Speaker 01: Okay.
+
+Speaker 00: What are you learning right now at the moment?
+
+Speaker 01: Remedial
+
+Speaker 01: teaching and also stock market to to advance.
+
+Speaker 00: Okay. Mhmm.
+
+Speaker 01: I I want to learn also
+
+Speaker 01: something that difficult to me
+
+Speaker 01: like you do.
+
+Speaker 01: Okay. Quoting.
+
+Speaker 01: I don't know how it's work, but maybe it's my personal, you know.
+
+Speaker 00: Why not?
+
+Speaker 00: It
+
+Speaker 00: is a very interesting field for sure.
+
+Speaker 00: If you have this
+
+Speaker 00: wanting to talk to people and kind of discovering what they're all about.
+
+Speaker 01: Just just for myself to to I don't know. Ah, okay. Like self coaching. Okay. I understand. Uh-huh. Uh-huh. That'll be good. It's
+
+Speaker 01: difficult.
+
+Speaker 00: Do you have any specific goals you have for this next month, for this next year?
+
+Speaker 01: Yeah. As I say, I want to
+
+Speaker 01: finish the teaching the remedial teaching. And then Mhmm.
+
+Speaker 01: And finish
+
+Speaker 01: I'm but also build one one one website for me. And then Okay. I want to accomplish a digital course. It's like a and money from,
+
+Speaker 01: like
+
+Speaker 01: like, people buy your course. So so
+
+Speaker 01: Okay.
+
+Speaker 01: Also also, I'm changed a little bit things because in pre apply, you know, they takes fee,
+
+Speaker 01: a lot of fees. Yeah. So I you know yes. Oh, I know. So they they I've built my website, and we will come to there. And I have integration.
+
+Speaker 01: Then
+
+Speaker 01: there's a Black Friday now, and
+
+Speaker 01: in WordPress, every everything is easy because you have Elementor,
+
+Speaker 01: if you know.
+
+Speaker 01: And you
+
+Speaker 01: can
+
+Speaker 01: integrate the
+
+Speaker 01: the technical
+
+Speaker 01: that you pay
+
+Speaker 01: $30,
+
+Speaker 01: $30, and it's for lifetime. And people link reply,
+
+Speaker 01: no need to pay fee. So
+
+Speaker 01: Okay.
+
+Speaker 00: Mhmm. So Interesting.
+
+Speaker 01: Yes.
+
+Speaker 01: If you are coaching,
+
+Speaker 01: if you're working community in Israel, wow. You have a lot of student.
+
+Speaker 01: A lot Mhmm. Booked for booked.
+
+Speaker 01: Okay. And
+
+Speaker 00: this website, you said it's for them teaching
+
+Speaker 00: Hebrew, Yes.
+
+Speaker 01: Okay. Okay. Mhmm.
+
+Speaker 01: I built courses
+
+Speaker 01: and write books.
+
+Speaker 01: Mhmm. GPT.
+
+Speaker 01: I'm not GPT is magic here for translation.
+
+Speaker 00: Okay.
+
+Speaker 01: So this way way I build my my
+
+Speaker 01: my OKUS.
+
+Speaker 00: Okay. Nice.
+
+Speaker 00: So
+
+Speaker 00: at the end of this year, from what I understand, you would like to have your website built
+
+Speaker 00: for teaching.
+
+Speaker 00: And you would like to finish this this teaching? You told me Course to get a course. Okay. Mhmm. Mhmm.
+
+Speaker 00: Okay. Anything else regarding, for example,
+
+Speaker 00: yourself,
+
+Speaker 00: like, besides this
+
+Speaker 00: work related kind of stuff? Mm-mm.
+
+Speaker 00: You told me about communication.
+
+Speaker 00: Would this be something that you want to
+
+Speaker 00: improve? Like, how to guide the conversation?
+
+Speaker 01: How to control conversation? Like like you
+
+Speaker 01: you speak to me with confidence. Mhmm.
+
+Speaker 01: You see, I see you know what you're doing. Okay? Okay.
+
+Speaker 01: That conversation, to be more like,
+
+Speaker 01: I can't change myself, but but more more, you know
+
+Speaker 01: Mhmm.
+
+Speaker 00: Do you believe you can change yourself or the way you behave or the way you think?
+
+Speaker 01: I believe no. No. Not not just myself. I mean, I I believe that believe I don't just believe. It's just what I think.
+
+Speaker 01: It's like patterns.
+
+Speaker 01: Patterns
+
+Speaker 01: can break
+
+Speaker 00: Mhmm. Culture,
+
+Speaker 01: for people, for anything.
+
+Speaker 01: Yep.
+
+Speaker 01: So
+
+Speaker 01: yes. But
+
+Speaker 01: it's depend a lot of
+
+Speaker 01: variables.
+
+Speaker 00: That's true. Yes.
+
+Speaker 00: Humans are complex as well. So Yes. That's
+
+Speaker 00: true. Well, Barak, I think understand
+
+Speaker 00: kind of the path that you wanna go. Do you have any questions for me?
+
+Speaker 01: No. So how how I see the the pop up.
+
+Speaker 01: Okay. So so
+
+Speaker 01: are you available for one week? One one day a week. Yes?
+
+Speaker 00: Exactly. I think that's the ideal
+
+Speaker 00: at the moment because
+
+Speaker 00: it it gives you time to kind of think about things in between
+
+Speaker 01: Mhmm.
+
+Speaker 00: And
+
+Speaker 00: gives you time to also do homework. So the sessions usually go so we have a session.
+
+Speaker 00: I send you
+
+Speaker 00: the summary of the session and some homework for you to do in between.
+
+Speaker 00: The homework can be something like,
+
+Speaker 00: I don't know, like journaling or writing something down or maybe
+
+Speaker 00: doing a little I don't know. Something to for you to think about that we discussed on the
+
+Speaker 00: on the session.
+
+Speaker 00: And then in the next one, you just come to you we have the session and you tell me how it was, if something surprised you, if something
+
+Speaker 00: was a bit strange for you. So
+
+Speaker 00: that's usually how it goes.
+
+Speaker 00: Mhmm.
+
+Speaker 00: And and yes. So you would basically just book the sessions once a week. Yep. Okay. Perfect. But then you think you you can help for for this situation?
+
+Speaker 00: Yes. Definitely. I mean, for the
+
+Speaker 00: the idea of coaching is to understand this, okay, this point c that we wanna get to.
+
+Speaker 00: And what what is it that is missing in between?
+
+Speaker 00: Or what is stopping you from from you achieving this? What is blocking you? You already mentioned some things. You said, okay. English right now is blocking me a little bit, so you already took the step to go and learn
+
+Speaker 00: start your English lessons.
+
+Speaker 00: But
+
+Speaker 00: you also mentioned that this is something that also happens to you in Hebrew, so maybe we can understand, okay,
+
+Speaker 00: what are you what are the patterns that are going on here? What are thoughts that I may be having when I'm having conversations
+
+Speaker 00: and this kind of thing?
+
+Speaker 00: Does that make sense? Yes. Okay. Okay. Perfect.
+
+Speaker 00: Okay. Thank you very much, your time. Thank you. Thank you so much for your honesty and your
+
+Speaker 00: willingness to share with me. I appreciate it. Thank
+
+Speaker 00: you. Thank you. Have a good one. See you, Balik. Thank you. Bye bye. Bye.
+
+Speaker 02: Design.
+
+Speaker 02: I knew I wanted the background to be black, and all four colors have to be present in the design. So I made this collage of doodles which on a black background have this kind of outer space feeling that really sets it apart from the rest of the deck. I hope it makes it feel a little outer than it. So I made this collage of doodles, which on a black background have this kind of outer space feeling that really sets it apart from the rest of the deck. I hope it makes it feel a little bit more magical when you can put down that draw four card. And just like that, every was designed. But it wasn't done just yet. Mattel called me and told me I could include an extra gift in these decks. And since the start of this channel, I've been selling art prints. It helped me turn this into a full time business, and I make new ones every year. So I came up with a plan of adding not one, but four mini prints in this deck.
+
+Speaker 02: These are the smallest prints I've ever released.
+
+Speaker 02: You can also use them as postcards if you're a freak.
+
+Speaker 02: Before I'm revealing the full deck, the last step is to design the packaging. I based my design on the wild cards and even designed the interior.
+
+Speaker 02: Seven months later.
+
+Speaker 02: This is the very

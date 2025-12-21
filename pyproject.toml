@@ -23,4 +23,5 @@ dependencies = [
     "pyannote-audio>=4.0.3",
     "sounddevice>=0.5.3",
     "soundfile>=0.13.1",
+    "deepgram-sdk>=5.3.0",
 ]
