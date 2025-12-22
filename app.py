@@ -691,19 +691,6 @@ with tab1:
                                 st.caption("🔊 System Audio")
                                 st.progress(0)
 
-                        # Show live transcript if available (poll from transcriber)
-                        if st.session_state.live_transcriber:
-                            live_text = st.session_state.live_transcriber.get_transcript()
-                            transcript_count = len(st.session_state.live_transcriber.get_transcript_parts())
-                            with st.expander(f"📝 Live Transcript ({transcript_count} segments)", expanded=True):
-                                st.text_area(
-                                    "Transcript",
-                                    value=live_text if live_text else "Waiting for speech...",
-                                    height=200,
-                                    disabled=True,
-                                    key=f"live_transcript_{transcript_count}"  # Dynamic key forces refresh
-                                )
-
                         if st.button("⏹️ End Session", type="primary", key="stop_recording"):
                             # Stop audio capture
                             saved_path = capturer.stop_recording()
