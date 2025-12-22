@@ -486,8 +486,6 @@ if "live_transcriber" not in st.session_state:
     st.session_state.live_transcriber = None
 if "recording_session_path" not in st.session_state:
     st.session_state.recording_session_path = None
-if "completed_session_transcript" not in st.session_state:
-    st.session_state.completed_session_transcript = None
 if "completed_session_info" not in st.session_state:
     st.session_state.completed_session_info = None
 
@@ -720,19 +718,23 @@ with tab1:
                                 # Save transcription to session folder
                                 if transcript and st.session_state.recording_session_path:
                                     save_transcription(st.session_state.recording_session_path, transcript)
-                                    # Store for preview
-                                    st.session_state.completed_session_transcript = transcript
+                                    # Store session info for preview (transcript comes from loaded_transcription)
                                     st.session_state.completed_session_info = {
                                         "audio_path": saved_path,
                                         "session_path": st.session_state.recording_session_path
                                     }
+                                    # Reset Tab 3 state so it picks up the new session
+                                    st.session_state.current_session_folder = None
+                                    st.session_state.current_active_client = None
+                                    st.session_state.loaded_transcription = None
+                                    # Clear the selectbox widget state to force fresh selection
+                                    if "session_select" in st.session_state:
+                                        del st.session_state["session_select"]
                                 else:
-                                    st.session_state.completed_session_transcript = None
                                     st.session_state.completed_session_info = None
 
                                 st.session_state.recording_session_path = None
                             else:
-                                st.session_state.completed_session_transcript = None
                                 st.session_state.completed_session_info = None
 
                             st.rerun()
@@ -775,6 +777,9 @@ with tab1:
                                 st.session_state.recording_session_path = session_path
                                 audio_callback = transcriber.send_audio
 
+                                # Clear previous session preview
+                                st.session_state.completed_session_info = None
+
                                 # Start recording with live transcription
                                 capturer.start_recording(
                                     device_id=selected_device_id,
@@ -791,8 +796,8 @@ with tab1:
                             if not rec_final_client:
                                 st.info("Select a client to start the session.")
 
-                    # Show completed session with transcript preview
-                    if st.session_state.completed_session_transcript and st.session_state.completed_session_info:
+                    # Show completed session with transcript preview (uses same source as LLM in Tab 3)
+                    if st.session_state.completed_session_info:
                         st.divider()
                         st.subheader("✅ Session Complete")
                         st.success(f"Saved to: {st.session_state.completed_session_info['session_path']}")
@@ -801,19 +806,22 @@ with tab1:
                         if os.path.exists(st.session_state.completed_session_info['audio_path']):
                             st.audio(st.session_state.completed_session_info['audio_path'])
 
-                        # Transcript preview
-                        with st.expander("📝 Transcription Preview", expanded=True):
-                            st.text_area(
-                                "Full Transcript",
-                                value=st.session_state.completed_session_transcript,
-                                height=300,
-                                disabled=True,
-                                key="completed_transcript_preview"
-                            )
+                        # Transcript preview - show what LLM sees (single source of truth)
+                        transcript_to_show = st.session_state.loaded_transcription
+                        if transcript_to_show:
+                            with st.expander("📝 Transcription (same as LLM sees)", expanded=True):
+                                st.text_area(
+                                    "Full Transcript",
+                                    value=transcript_to_show,
+                                    height=300,
+                                    disabled=True,
+                                    key="completed_transcript_preview"
+                                )
+                        else:
+                            st.info("Transcription will be visible in Active Clients tab")
 
                         # Clear button
                         if st.button("🗑️ Clear & Start New Session", key="clear_completed"):
-                            st.session_state.completed_session_transcript = None
                             st.session_state.completed_session_info = None
                             st.session_state.recorded_audio_path = None
                             st.rerun()
@@ -1290,7 +1298,7 @@ with tab3:
                     value=st.session_state.loaded_transcription,
                     height=200,
                     disabled=True,
-                    key="transcription_preview"
+                    key=f"transcription_preview_{st.session_state.current_session_folder}"
                 )
 
             # Add transcription to chat context if not already added
