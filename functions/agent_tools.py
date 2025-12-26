@@ -1,6 +1,9 @@
 """
-Here you will find the tools given to the Agent, specially to read and write
-in the Local Files.
+Here you will find the tools given to the ACTIVE Clients Agent, designed to read and write in the Local Files,
+and create text and or documents based on transcriptions form sessions.
+
+You will find here: 
+read_folder, read_template, verify_document_draft, save_summary, save_homework, save_next_session_draft
 """
 
 from langchain.tools import tool

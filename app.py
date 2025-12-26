@@ -1490,27 +1490,3 @@ with st.sidebar:
                            if os.path.isdir(os.path.join(UNDEFINED_PATH, d))]) if os.path.exists(UNDEFINED_PATH) else 0
     st.metric("Pending Discovery", undefined_count)
 
-    st.divider()
-
-    st.subheader("Clear Conversations")
-    if st.button("Clear Transcription", key="clear_transcription"):
-        st.session_state.transcription_result = None
-        st.session_state.transcription_session_path = None
-        st.session_state.transcription_session_folder = None
-        st.rerun()
-
-    if st.button("Clear Undefined Chat", key="clear_undefined"):
-        st.session_state.messages_undefined = []
-        st.session_state.discovery_prep_content = None
-        st.rerun()
-
-    if st.button("Clear Active Chat", key="clear_active"):
-        st.session_state.messages_active = []
-        st.session_state.session_documents = {}
-        st.session_state.current_session_folder = None
-        st.session_state.current_active_client = None
-        st.rerun()
-
-    if st.button("Clear Assistant Chat", key="clear_chat"):
-        st.session_state.messages_chat = []
-        st.rerun()
