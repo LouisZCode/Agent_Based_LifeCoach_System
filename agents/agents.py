@@ -19,6 +19,7 @@ def load_prompts():
 prompts = load_prompts()
 session_agent_prompt = prompts["session_agent_prompt"]
 undefined_clients_agent_prompt = prompts["undefined_clients_agent_prompt"]
+life_coach_assistant_prompt = prompts["life_coach_assistant_prompt"]
 
 
 session_agent = create_agent(
@@ -33,16 +34,11 @@ undefined_clients_agent = create_agent(
     tools=[read_folder, save_initial_persona],
 )
 
-"""
-discovery_agent = create_agent(
-    system_prompt=first_draft_agent_prompt,
-    model="google_genai:gemini-2.5-flash",
-    tools=[list_folder_names, read_client_folder]
+
+life_coach_assistant_agent = create_agent(
+    system_prompt=life_coach_assistant_prompt,
+    model="openai:gpt-5-mini",
+    tools=[read_folder]
 )
 
-chat_agent = create_agent(
-    system_prompt=first_draft_agent_prompt,
-    model="google_genai:gemini-2.5-flash",
-    tools=[list_folder_names, read_client_folder]
-)
-"""
+#google_genai:gemini-2.5-flash

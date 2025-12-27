@@ -22,7 +22,7 @@ import pdfplumber
 from pathlib import Path
 
 # Import agents (to be created by user)
-from agents import session_agent, undefined_clients_agent
+from agents import session_agent, undefined_clients_agent, life_coach_assistant_agent
 
 # Import transcription functions
 from functions import (
@@ -1594,7 +1594,7 @@ with tab4:
 
         with st.spinner("Chat agent is thinking..."):
             response = invoke_agent(
-                chat_agent,
+                life_coach_assistant_agent,
                 st.session_state.messages_chat
             )
             st.session_state.messages_chat.append({
