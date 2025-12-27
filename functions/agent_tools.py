@@ -72,6 +72,38 @@ def read_template(path : str, template_name : str) -> str:
     return text
 
 @tool(
+    "read_document",
+    parse_docstring=True,
+    description="reads the desired document in a specific clients folder"
+)
+def read_document(path : str, document_name : str) -> str:
+    """
+    Description:
+        Reads the document from the clients folder
+
+    Args:
+        path (str): this is the path where the documents is.
+        document_name (str): the desired document to read.
+
+    returns:
+        The document content to understand the information inside it
+
+    raises:
+        Error if the document is not readable or does not exist
+
+    """
+    log_tool_call("read_document", {"path": path, "document_name": document_name})
+    final_path = f"{path}/{document_name}"
+
+    file_path = Path(final_path)
+    doc = Document(file_path)
+
+    text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+    log_tool_call("read_document", {"document_name": document_name}, output=f"Loaded {len(text)} chars", status="success")
+
+    return text
+
+@tool(
     "verify_document_draft",
     parse_docstring=True,
     description="MUST use before saving any document. Checks if draft meets character limits."
