@@ -5,8 +5,9 @@ This module moves the verify-edit loop from inside LangGraph to Python control,
 reducing token usage by ~80% (only first call includes transcription, edits use draft only).
 """
 
+import re
 from .agent_tools import verify_document_draft, save_summary, save_homework, save_session_draft
-from .logger import log_orchestrator, log_separator
+from .logger import log_doc_creation
 
 DRAFT_START = "---DRAFT_START---"
 DRAFT_END = "---DRAFT_END---"
@@ -34,6 +35,31 @@ def extract_draft(response: str) -> str | None:
         end = response.index(DRAFT_END)
         return response[start:end].strip()
     return None
+
+
+def parse_edit_instructions(result: str) -> str:
+    """
+    Parse verification result into concise edit summary.
+
+    Example input:
+        "TOTAL: REMOVE 17 chars overall\nWarm Opening: ADD 37 chars\n..."
+    Example output:
+        "Warm Opening: +37, Main Takeaways: -115"
+    """
+    edits = []
+    for line in result.split("\n"):
+        # Skip total and header lines
+        if "TOTAL:" in line or "===" in line or "CURRENT DRAFT" in line:
+            continue
+        # Match section edits like "Warm Opening: ADD 37 chars"
+        match = re.search(r"^([^:]+):\s*(ADD|REMOVE)\s*(\d+)", line)
+        if match:
+            section = match.group(1).strip()
+            action = match.group(2)
+            chars = match.group(3)
+            sign = "+" if action == "ADD" else "-"
+            edits.append(f"{section}: {sign}{chars}")
+    return ", ".join(edits) if edits else "edits needed"
 
 
 def detect_document_type(prompt: str) -> str | None:
@@ -85,13 +111,9 @@ def create_document(invoke_fn, transcription: str, doc_type: str, session_path: 
 
     template_name = TEMPLATE_MAP[doc_type]
 
-    # Log orchestrator activation
-    log_separator(f"Python Orchestrator: {doc_type}")
-    log_orchestrator("STARTED", {
-        "doc_type": doc_type,
-        "transcription_chars": len(transcription),
-        "transcription_tokens_est": len(transcription) // 4
-    })
+    # Log header
+    log_doc_creation("HEADER", doc_type=doc_type, client=client_name, session=session_folder)
+    log_doc_creation("START", transcription=f"{len(transcription)} chars (~{len(transcription) // 4} tokens)")
 
     # Step 1: Initial draft request (WITH transcription - only time we send it)
     initial_prompt = f"""[DRAFT_MODE] Create a {doc_type} for this session.
@@ -111,10 +133,7 @@ Do NOT call verify_document_draft or save tools - just return the draft.
 [Session Transcription]
 {transcription}"""
 
-    log_orchestrator("INVOKE_1 (with transcription)", {
-        "prompt_chars": len(initial_prompt),
-        "prompt_tokens_est": len(initial_prompt) // 4
-    })
+    log_doc_creation("DRAFT", prompt=f"{len(initial_prompt)} chars (~{len(initial_prompt) // 4} tokens)")
 
     response = invoke_fn([{"role": "user", "content": initial_prompt}])
     draft = extract_draft(response)
@@ -123,20 +142,15 @@ Do NOT call verify_document_draft or save tools - just return the draft.
         # Fallback: try to use the whole response as draft (agent didn't use markers)
         draft = response.strip()
         if len(draft) < 500:  # Too short, probably an error message
-            log_orchestrator("FAILED", {"reason": "Could not extract draft"})
+            log_doc_creation("ERROR", reason="Could not extract draft")
             return None, f"Failed to extract draft from response: {response[:200]}..."
-        log_orchestrator("WARNING", {"reason": "Draft markers not found, using full response"})
+        log_doc_creation("WARNING", reason="Draft markers not found, using full response")
 
-    log_orchestrator("DRAFT_RECEIVED", {
-        "draft_chars": len(draft),
-        "draft_tokens_est": len(draft) // 4
-    })
+    log_doc_creation("DRAFT_OK", chars=len(draft))
 
     # Step 2: Python-side verification loop
     for attempt in range(1, MAX_ATTEMPTS + 1):
         # FREE verification call (no LLM - just Python)
-        log_orchestrator(f"VERIFY attempt={attempt}", {"draft_chars": len(draft)})
-
         result = verify_document_draft.invoke({
             "content": draft,
             "document_type": doc_type,
@@ -144,12 +158,17 @@ Do NOT call verify_document_draft or save tools - just return the draft.
         })
 
         if "ALL SECTIONS PASS" in result:
-            log_orchestrator("VERIFY_PASSED", {"attempt": attempt})
+            log_doc_creation("VERIFY", attempt=attempt, status="PASS", details="all sections OK")
             break
 
+        # Parse edits for concise display
+        edits_summary = parse_edit_instructions(result)
+
         if attempt >= MAX_ATTEMPTS:
-            log_orchestrator("VERIFY_LIMIT_REACHED", {"attempt": attempt})
+            log_doc_creation("VERIFY", attempt=attempt, status="LIMIT", details="forcing save")
             break
+
+        log_doc_creation("VERIFY", attempt=attempt, status="FAIL", details=edits_summary)
 
         # Step 3: Edit request (NO transcription - just draft + instructions ~2.5k tokens)
         edit_prompt = f"""[EDIT_MODE] Edit this draft according to the instructions below.
@@ -164,28 +183,20 @@ Return the edited draft wrapped in these markers:
 
 {result}"""
 
-        log_orchestrator(f"INVOKE_EDIT attempt={attempt}", {
-            "prompt_chars": len(edit_prompt),
-            "prompt_tokens_est": len(edit_prompt) // 4,
-            "note": "NO transcription"
-        })
+        log_doc_creation("EDIT", attempt=attempt, prompt=f"{len(edit_prompt)} chars (~{len(edit_prompt) // 4} tokens)")
 
         response = invoke_fn([{"role": "user", "content": edit_prompt}])
         new_draft = extract_draft(response)
 
         if new_draft:
             draft = new_draft
-            log_orchestrator("EDIT_RECEIVED", {"new_draft_chars": len(draft)})
         else:
             # Fallback: use whole response
             if len(response.strip()) > 500:
                 draft = response.strip()
-                log_orchestrator("EDIT_RECEIVED (fallback)", {"new_draft_chars": len(draft)})
 
     # Step 4: Save directly via Python (no LLM call)
     try:
-        log_orchestrator("SAVE (Python, no LLM)", {"doc_type": doc_type, "path": session_path})
-
         if doc_type == "summary":
             save_result = save_summary.invoke({"path": session_path, "content": draft})
         elif doc_type == "homework":
@@ -193,8 +204,8 @@ Return the edited draft wrapped in these markers:
         else:
             save_result = save_session_draft.invoke({"path": session_path, "content": draft})
 
-        log_orchestrator("COMPLETED", {"result": save_result[:100] if len(save_result) > 100 else save_result})
+        log_doc_creation("SAVED", file=f"{doc_type}.txt", chars=len(draft))
         return draft, save_result
     except Exception as e:
-        log_orchestrator("SAVE_FAILED", {"error": str(e)})
+        log_doc_creation("ERROR", reason=f"Save failed: {str(e)}")
         return draft, f"Draft created but save failed: {str(e)}"

@@ -485,14 +485,15 @@ def strip_context_tags(text: str) -> str:
     return cleaned.strip()
 
 
-def invoke_agent(agent, messages: list) -> str:
+def invoke_agent(agent, messages: list, log_separator_enabled: bool = True) -> str:
     """Invoke an agent with the conversation history and return response"""
     from langchain_core.messages import AIMessage, HumanMessage
     from functions import log_separator
 
-    # Log separator for each agent call
-    latest_msg = messages[-1]["content"][:50] if messages else "New Session"
-    log_separator(f"Agent Call: {latest_msg}...")
+    # Log separator for each agent call (can be suppressed for orchestrator calls)
+    if log_separator_enabled:
+        latest_msg = messages[-1]["content"][:50] if messages else "New Session"
+        log_separator(f"Agent Call: {latest_msg}...")
 
     # Convert dict messages to LangChain message objects
     lc_messages = []
@@ -1528,9 +1529,9 @@ with tab3:
             if doc_type and st.session_state.loaded_transcription:
                 # Use Python-side orchestrator for document creation (saves ~80% tokens)
                 with st.spinner(f"Creating {doc_type}..."):
-                    # Create invoke function wrapper
+                    # Create invoke function wrapper (suppress separator - orchestrator handles logging)
                     def invoke_fn(messages):
-                        return invoke_agent(session_agent, messages)
+                        return invoke_agent(session_agent, messages, log_separator_enabled=False)
 
                     draft, status = create_document(
                         invoke_fn=invoke_fn,

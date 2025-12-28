@@ -72,10 +72,7 @@ def log_separator(label: str = ""):
 def log_orchestrator(action: str, details: dict = None):
     """
     Log Python orchestrator actions (not LLM tool calls).
-
-    Args:
-        action: What the orchestrator is doing
-        details: Optional dict with details (chars, tokens estimate, etc.)
+    DEPRECATED: Use log_doc_creation() for cleaner output.
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -91,3 +88,44 @@ def log_orchestrator(action: str, details: dict = None):
     LOGS_PATH.mkdir(exist_ok=True)
     with open(get_log_file(), "a", encoding="utf-8") as f:
         f.write(log_entry)
+
+
+def log_doc_creation(event: str, doc_type: str = "", client: str = "", session: str = "", **kwargs):
+    """
+    Unified logging for document creation workflow.
+
+    Events:
+        HEADER - Start of document creation (creates separator)
+        START - Initial info (transcription size)
+        DRAFT - Sending draft request to LLM
+        DRAFT_OK - Draft received successfully
+        VERIFY - Verification result (PASS/FAIL/LIMIT)
+        EDIT - Sending edit request to LLM
+        TOOL - Tool call (indented)
+        SAVED - Document saved
+        ERROR - Error occurred
+    """
+    timestamp = datetime.now().strftime("%H:%M:%S")
+
+    if event == "HEADER":
+        header = f"{doc_type.upper()}: {client} / {session}"
+        entry = f"\n{'='*60}\n[{timestamp}] === {header} ===\n{'='*60}\n"
+    elif event == "TOOL":
+        tool_name = kwargs.get("tool", "unknown")
+        result = kwargs.get("result", "")
+        entry = f"[{timestamp}]   └─ {tool_name} → {result}\n"
+    elif event == "VERIFY":
+        attempt = kwargs.get("attempt", 0)
+        status = kwargs.get("status", "")
+        details = kwargs.get("details", "")
+        entry = f"[{timestamp}] VERIFY #{attempt} {status} | {details}\n"
+    else:
+        details_parts = []
+        for k, v in kwargs.items():
+            details_parts.append(f"{k}: {v}")
+        details_str = " | ".join(details_parts) if details_parts else ""
+        entry = f"[{timestamp}] {event}{' | ' + details_str if details_str else ''}\n"
+
+    LOGS_PATH.mkdir(exist_ok=True)
+    with open(get_log_file(), "a", encoding="utf-8") as f:
+        f.write(entry)
