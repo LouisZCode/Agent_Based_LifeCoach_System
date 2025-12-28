@@ -67,3 +67,27 @@ def log_separator(label: str = ""):
     LOGS_PATH.mkdir(exist_ok=True)
     with open(get_log_file(), "a", encoding="utf-8") as f:
         f.write(separator)
+
+
+def log_orchestrator(action: str, details: dict = None):
+    """
+    Log Python orchestrator actions (not LLM tool calls).
+
+    Args:
+        action: What the orchestrator is doing
+        details: Optional dict with details (chars, tokens estimate, etc.)
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    details_str = ""
+    if details:
+        parts = []
+        for k, v in details.items():
+            parts.append(f"{k}={v}")
+        details_str = " | " + ", ".join(parts)
+
+    log_entry = f"[{timestamp}] [ORCHESTRATOR] {action}{details_str}\n"
+
+    LOGS_PATH.mkdir(exist_ok=True)
+    with open(get_log_file(), "a", encoding="utf-8") as f:
+        f.write(log_entry)

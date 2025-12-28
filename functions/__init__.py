@@ -19,6 +19,7 @@ from .transcription_deepgram import (
     DeepgramLiveTranscriber,
     convert_audio_to_deepgram_format,
 )
+from .document_orchestrator import create_document, detect_document_type
 
 
 print("Function module loaded...")

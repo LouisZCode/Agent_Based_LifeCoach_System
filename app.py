@@ -40,6 +40,9 @@ from functions import (
 # Import audio capture module
 from audio_capture import get_audio_capturer, get_platform_info
 
+# Import document orchestrator for Python-side verification loop
+from functions.document_orchestrator import create_document, detect_document_type
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -1519,38 +1522,70 @@ with tab3:
                 "content": full_prompt
             })
 
-            with st.spinner("Session agent is processing..."):
-                # Build minimal context for agent (not full chat history)
-                agent_context = []
+            # Check if this is a document creation request
+            doc_type = detect_document_type(prompt)
 
-                # Add transcription if available
-                if st.session_state.loaded_transcription:
+            if doc_type and st.session_state.loaded_transcription:
+                # Use Python-side orchestrator for document creation (saves ~80% tokens)
+                with st.spinner(f"Creating {doc_type}..."):
+                    # Create invoke function wrapper
+                    def invoke_fn(messages):
+                        return invoke_agent(session_agent, messages)
+
+                    draft, status = create_document(
+                        invoke_fn=invoke_fn,
+                        transcription=st.session_state.loaded_transcription,
+                        doc_type=doc_type,
+                        session_path=session_path,
+                        client_name=selected_client,
+                        session_folder=session_folder
+                    )
+
+                    if draft:
+                        response = f"Created {doc_type} and saved to {session_path}"
+                        # Update session_documents for preview
+                        doc_key = "next_prep" if doc_type == "draft" else doc_type
+                        st.session_state.session_documents[doc_key] = draft
+                    else:
+                        response = f"Failed to create {doc_type}: {status}"
+
+                    st.session_state.messages_active.append({
+                        "role": "assistant",
+                        "content": response
+                    })
+            else:
+                # Regular chat flow (non-document requests)
+                with st.spinner("Session agent is processing..."):
+                    # Build minimal context for agent (not full chat history)
+                    agent_context = []
+
+                    # Add transcription if available
+                    if st.session_state.loaded_transcription:
+                        agent_context.append({
+                            "role": "user",
+                            "content": f"[Session transcription]\n\n{st.session_state.loaded_transcription}"
+                        })
+
+                    # Add current request only (not full history)
                     agent_context.append({
                         "role": "user",
-                        "content": f"[Session transcription]\n\n{st.session_state.loaded_transcription}"
+                        "content": full_prompt
                     })
 
-                # Add current request only (not full history)
-                agent_context.append({
-                    "role": "user",
-                    "content": full_prompt
-                })
+                    response = invoke_agent(session_agent, agent_context)
+                    st.session_state.messages_active.append({
+                        "role": "assistant",
+                        "content": response
+                    })
 
-                response = invoke_agent(session_agent, agent_context)
-                st.session_state.messages_active.append({
-                    "role": "assistant",
-                    "content": response
-                })
-
-                # Check for generated documents
-                session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
-                for key, filename in [("summary", "summary.txt"),
-                                       ("homework", "homework.txt"),
-                                       ("next_prep", "next_session.txt")]:
-                    doc_path = os.path.join(session_path, filename)
-                    if os.path.exists(doc_path):
-                        with open(doc_path, 'r', encoding='utf-8') as f:
-                            st.session_state.session_documents[key] = f.read()
+                    # Check for generated documents (fallback for non-orchestrated flow)
+                    for key, filename in [("summary", "summary.txt"),
+                                           ("homework", "homework.txt"),
+                                           ("next_prep", "next_session.txt")]:
+                        doc_path = os.path.join(session_path, filename)
+                        if os.path.exists(doc_path):
+                            with open(doc_path, 'r', encoding='utf-8') as f:
+                                st.session_state.session_documents[key] = f.read()
 
             st.rerun()
 
