@@ -594,6 +594,10 @@ if "transcription_added_to_chat" not in st.session_state:
     st.session_state.transcription_added_to_chat = False
 if "documents_added_to_chat" not in st.session_state:
     st.session_state.documents_added_to_chat = False
+if "create_doc" not in st.session_state:
+    st.session_state.create_doc = None
+if "confirm_regenerate" not in st.session_state:
+    st.session_state.confirm_regenerate = None
 
 # Tab 4: Chat Assistant
 if "messages_chat" not in st.session_state:
@@ -1424,32 +1428,10 @@ with tab3:
                     disabled=True,
                     key=f"transcription_preview_{st.session_state.current_session_folder}"
                 )
-
-            # Add transcription to chat context if not already added
-            if not st.session_state.transcription_added_to_chat:
-                transcription_message = f"[Session transcription loaded]\n\n{st.session_state.loaded_transcription}"
-                if not any("[Session transcription" in m.get("content", "") for m in st.session_state.messages_active):
-                    st.session_state.messages_active.append({
-                        "role": "user",
-                        "content": transcription_message
-                    })
-                st.session_state.transcription_added_to_chat = True
         elif not is_new_session:
             st.info("No transcription found for this session")
 
-        # Add documents to chat context if not already added
-        if st.session_state.session_documents:
-            if not st.session_state.documents_added_to_chat:
-                for doc_type, content in st.session_state.session_documents.items():
-                    marker = f"[Session {doc_type} loaded]"
-                    if not any(marker in m.get("content", "") for m in st.session_state.messages_active):
-                        st.session_state.messages_active.append({
-                            "role": "user",
-                            "content": f"{marker}\n\n{content}"
-                        })
-                st.session_state.documents_added_to_chat = True
-
-        # Upload transcription
+        # Upload transcription (for new sessions or to replace)
         st.divider()
         upload_label = "Upload transcription" if is_new_session else "Or upload a different transcription"
         uploaded_file = st.file_uploader(
@@ -1462,7 +1444,6 @@ with tab3:
         if uploaded_file and date_selected and session_folder:
             file_content = read_uploaded_file(uploaded_file)
             if file_content:
-                # Save transcription to client's session folder
                 session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
                 os.makedirs(session_path, exist_ok=True)
 
@@ -1471,142 +1452,141 @@ with tab3:
                     f.write(file_content)
 
                 st.success(f"Transcription saved to: {selected_client}/{session_folder}/transcription.txt")
-
-                # Update loaded transcription
                 st.session_state.loaded_transcription = file_content
-
-                # Add to chat context
-                file_message = f"[Session transcription: {uploaded_file.name}]\n\n{file_content}"
-                if not any(file_message in m.get("content", "") for m in st.session_state.messages_active):
-                    st.session_state.messages_active.append({
-                        "role": "user",
-                        "content": file_message
-                    })
-                st.session_state.transcription_added_to_chat = True
 
         st.divider()
 
-        # Chat messages display
-        chat_container = st.container(height=400)
-        with chat_container:
-            for message in st.session_state.messages_active:
-                with st.chat_message(message["role"]):
-                    # Condense loaded document messages for display (full content still in LLM context)
-                    content = message["content"]
-                    if "[Session transcription" in content:
-                        display_text = "📄 Session transcription loaded"
-                    elif "[Session summary loaded]" in content:
-                        display_text = "📄 Summary loaded"
-                    elif "[Session homework loaded]" in content:
-                        display_text = "📄 Homework loaded"
-                    elif "[Session next_session loaded]" in content:
-                        display_text = "📄 Next Session Draft loaded"
-                    elif message["role"] == "user":
-                        display_text = strip_context_tags(content)
-                    else:
-                        display_text = content
-                    st.markdown(display_text)
+        # ================================================================
+        # DOCUMENT CREATION BUTTONS
+        # ================================================================
 
-        # Chat input (disabled until transcription is loaded)
-        chat_disabled = st.session_state.loaded_transcription is None
-        chat_placeholder = "Upload a transcription first..." if chat_disabled else "Type your session notes or instructions..."
-        if prompt := st.chat_input(
-            chat_placeholder,
-            key="active_chat_input",
-            disabled=chat_disabled
-        ):
+        st.subheader("Create Documents")
+
+        # Check which docs exist
+        summary_exists = "summary" in st.session_state.session_documents
+        homework_exists = "homework" in st.session_state.session_documents
+        next_exists = "next_session" in st.session_state.session_documents
+
+        # Disable buttons if no transcription
+        buttons_disabled = st.session_state.loaded_transcription is None
+
+        if buttons_disabled:
+            st.caption("Upload a transcription to enable document creation")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            btn_label = "📝 Summary ✓" if summary_exists else "📝 Summary"
+            if st.button(btn_label, key="btn_summary", disabled=buttons_disabled, use_container_width=True):
+                if summary_exists:
+                    st.session_state.confirm_regenerate = "summary"
+                else:
+                    st.session_state.create_doc = "summary"
+                st.rerun()
+
+        with col2:
+            btn_label = "📋 Homework ✓" if homework_exists else "📋 Homework"
+            if st.button(btn_label, key="btn_homework", disabled=buttons_disabled, use_container_width=True):
+                if homework_exists:
+                    st.session_state.confirm_regenerate = "homework"
+                else:
+                    st.session_state.create_doc = "homework"
+                st.rerun()
+
+        with col3:
+            btn_label = "📅 Next Session ✓" if next_exists else "📅 Next Session"
+            if st.button(btn_label, key="btn_next", disabled=buttons_disabled, use_container_width=True):
+                if next_exists:
+                    st.session_state.confirm_regenerate = "draft"
+                else:
+                    st.session_state.create_doc = "draft"
+                st.rerun()
+
+        # Extra instructions text area
+        extra_instructions = st.text_area(
+            "Extra instructions (optional)",
+            placeholder="e.g., Focus on anxiety management techniques, use more direct language...",
+            height=80,
+            key="extra_instructions",
+            disabled=buttons_disabled
+        )
+
+        # ================================================================
+        # CONFIRMATION DIALOG FOR REGENERATING DOCS
+        # ================================================================
+
+        if st.session_state.get("confirm_regenerate"):
+            doc_type = st.session_state.confirm_regenerate
+            st.warning(f"⚠️ A {doc_type} already exists. Regenerate and overwrite?")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Yes, regenerate", key="confirm_yes", type="primary"):
+                    st.session_state.create_doc = doc_type
+                    st.session_state.confirm_regenerate = None
+                    st.rerun()
+            with col2:
+                if st.button("Cancel", key="confirm_no"):
+                    st.session_state.confirm_regenerate = None
+                    st.rerun()
+
+        # ================================================================
+        # DOCUMENT CREATION HANDLER
+        # ================================================================
+
+        if st.session_state.get("create_doc") and session_folder:
+            doc_type = st.session_state.create_doc
+            st.session_state.create_doc = None  # Reset immediately
+
             session_path = os.path.join(ACTIVE_PATH, selected_client, session_folder)
-            full_prompt = f"[Client: {selected_client}] [Session: {session_folder}] [Session Path: {session_path}]\n{prompt}"
 
-            st.session_state.messages_active.append({
-                "role": "user",
-                "content": full_prompt
-            })
+            # Get extra instructions if provided
+            extra = st.session_state.get("extra_instructions", "")
 
-            # Check if this is a document creation request
-            doc_type = detect_document_type(prompt)
+            with st.spinner(f"Creating {doc_type}..."):
+                def invoke_fn(messages):
+                    return invoke_agent(session_agent, messages, log_separator_enabled=False)
 
-            if doc_type and st.session_state.loaded_transcription:
-                # Use Python-side orchestrator for document creation (saves ~80% tokens)
-                with st.spinner(f"Creating {doc_type}..."):
-                    # Create invoke function wrapper (suppress separator - orchestrator handles logging)
-                    def invoke_fn(messages):
-                        return invoke_agent(session_agent, messages, log_separator_enabled=False)
+                draft, status = create_document(
+                    invoke_fn=invoke_fn,
+                    transcription=st.session_state.loaded_transcription,
+                    doc_type=doc_type,
+                    session_path=session_path,
+                    client_name=selected_client,
+                    session_folder=session_folder,
+                    extra_instructions=extra
+                )
 
-                    draft, status = create_document(
-                        invoke_fn=invoke_fn,
-                        transcription=st.session_state.loaded_transcription,
-                        doc_type=doc_type,
-                        session_path=session_path,
-                        client_name=selected_client,
-                        session_folder=session_folder
-                    )
-
-                    if draft:
-                        response = f"Created {doc_type} and saved to {session_path}"
-                        # Update session_documents for preview
-                        doc_key = "next_prep" if doc_type == "draft" else doc_type
-                        st.session_state.session_documents[doc_key] = draft
-                    else:
-                        response = f"Failed to create {doc_type}: {status}"
-
-                    st.session_state.messages_active.append({
-                        "role": "assistant",
-                        "content": response
-                    })
-            else:
-                # Regular chat flow (non-document requests)
-                with st.spinner("Session agent is processing..."):
-                    # Build minimal context for agent (not full chat history)
-                    agent_context = []
-
-                    # Add transcription if available
-                    if st.session_state.loaded_transcription:
-                        agent_context.append({
-                            "role": "user",
-                            "content": f"[Session transcription]\n\n{st.session_state.loaded_transcription}"
-                        })
-
-                    # Add current request only (not full history)
-                    agent_context.append({
-                        "role": "user",
-                        "content": full_prompt
-                    })
-
-                    response = invoke_agent(session_agent, agent_context)
-                    st.session_state.messages_active.append({
-                        "role": "assistant",
-                        "content": response
-                    })
-
-                    # Check for generated documents (fallback for non-orchestrated flow)
-                    for key, filename in [("summary", "summary.txt"),
-                                           ("homework", "homework.txt"),
-                                           ("next_prep", "next_session.txt")]:
-                        doc_path = os.path.join(session_path, filename)
-                        if os.path.exists(doc_path):
-                            with open(doc_path, 'r', encoding='utf-8') as f:
-                                st.session_state.session_documents[key] = f.read()
+                if draft:
+                    doc_key = "next_session" if doc_type == "draft" else doc_type
+                    st.session_state.session_documents[doc_key] = draft
+                    st.success(f"✅ {doc_type.title()} created!")
+                else:
+                    st.error(f"Failed to create {doc_type}: {status}")
 
             st.rerun()
 
-        # Generated documents with preview and download (below chat input)
-        if st.session_state.session_documents:
-            st.subheader("Generated Documents")
+        # ================================================================
+        # DOCUMENT PREVIEW SECTION
+        # ================================================================
 
-            doc_mapping = {
+        if st.session_state.session_documents:
+            st.divider()
+            st.subheader("Documents")
+
+            doc_info = {
                 "summary": ("📄 Summary", "summary.txt"),
-                "homework": ("📝 Homework", "homework.txt"),
-                "next_session": ("🔮 Next Session", "next_session.txt")
+                "homework": ("📋 Homework", "homework.txt"),
+                "next_session": ("📅 Next Session", "next_session.txt")
             }
 
-            for key, (label, filename) in doc_mapping.items():
+            for key, (label, filename) in doc_info.items():
                 if key in st.session_state.session_documents:
-                    with st.expander(f"{label} - Preview & Download"):
-                        st.text(st.session_state.session_documents[key])
+                    content = st.session_state.session_documents[key]
+                    with st.expander(label):
+                        st.text(content)
                         st.download_button(
-                            label=f"Download {label}",
-                            data=st.session_state.session_documents[key],
+                            f"Download {label}",
+                            data=content,
                             file_name=filename,
                             mime="text/plain",
                             key=f"download_{key}"

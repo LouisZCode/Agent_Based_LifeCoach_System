@@ -84,7 +84,9 @@ def detect_document_type(prompt: str) -> str | None:
     return None
 
 
-def create_document(invoke_fn, transcription: str, doc_type: str, session_path: str, client_name: str = "", session_folder: str = "") -> tuple[str | None, str]:
+def create_document(invoke_fn, transcription: str, doc_type: str, session_path: str,
+                    client_name: str = "", session_folder: str = "",
+                    extra_instructions: str = "") -> tuple[str | None, str]:
     """
     Orchestrate document creation with Python-side verification loop.
 
@@ -102,6 +104,7 @@ def create_document(invoke_fn, transcription: str, doc_type: str, session_path: 
         session_path: Path to save document
         client_name: Optional client name for context
         session_folder: Optional session folder for context
+        extra_instructions: Optional additional instructions from user
 
     Returns:
         (draft, status_message) tuple
@@ -116,6 +119,10 @@ def create_document(invoke_fn, transcription: str, doc_type: str, session_path: 
     log_doc_creation("START", transcription=f"{len(transcription)} chars (~{len(transcription) // 4} tokens)")
 
     # Step 1: Initial draft request (WITH transcription - only time we send it)
+    extra_section = ""
+    if extra_instructions:
+        extra_section = f"\n[Additional Instructions]\n{extra_instructions}\n"
+
     initial_prompt = f"""[DRAFT_MODE] Create a {doc_type} for this session.
 
 Read the template at LifeCoach_Data/Templates/{template_name}
@@ -129,7 +136,7 @@ Return your draft wrapped in these markers:
 Do NOT call verify_document_draft or save tools - just return the draft.
 
 [Client: {client_name}] [Session: {session_folder}] [Session Path: {session_path}]
-
+{extra_section}
 [Session Transcription]
 {transcription}"""
 
