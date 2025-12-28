@@ -126,33 +126,73 @@ As sessions accumulate, query across all client data for strategic insights.
 
 ### Prerequisites
 
-- Python 3.12+
 - macOS with Apple Silicon (M1/M2/M3) for optimal transcription performance
 - [Homebrew](https://brew.sh/) for system dependencies
 
-### Setup
+### Quick Start (New Machine)
 
+**Step 1: Install Homebrew** (if not installed)
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/LifeCoach_AI_System.git
-cd LifeCoach_AI_System
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+Follow the prompts. Run the commands shown at the end to add Homebrew to your PATH.
 
-# Install Python dependencies
-uv sync
+**Step 2: Install dependencies**
+```bash
+brew install git uv ffmpeg
+```
 
-# Install FFmpeg (required for audio processing)
-brew install ffmpeg
+**Step 3: Clone the repository**
+```bash
+mkdir -p ~/Applications
+git clone https://github.com/LouisZCode/Agentic_LifeCoach_System.git ~/Applications/LifeCoach_AI_System
+cd ~/Applications/LifeCoach_AI_System
+```
 
-# Set up environment variables
-cp .env.example .env
-# Add your LLM API key (Anthropic, OpenAI, or Ollama endpoint)
+**Step 4: Create environment file with API keys**
+```bash
+cat > .env << 'EOF'
+ANTHROPIC_API_KEY=your-anthropic-key-here
+DEEPGRAM_API_KEY=your-deepgram-key-here
+HUGGINGFACE_TOKEN=your-huggingface-token-here
+EOF
+```
+
+**Step 5: Make launcher executable** (one-time)
+```bash
+chmod +x ~/Applications/LifeCoach_AI_System/LifeCoach.command
+```
+
+**Step 6: Launch!**
+
+Double-click `LifeCoach.command` in Finder, or run:
+```bash
+./LifeCoach.command
 ```
 
 ### Running the Application
 
+**Recommended:** Double-click `LifeCoach.command`
+
+This will:
+1. Auto-update from GitHub (get latest code)
+2. Sync dependencies (if changed)
+3. Launch the app in your browser
+
+**Alternative:** Run manually
 ```bash
-streamlit run app.py
+cd ~/Applications/LifeCoach_AI_System
+uv run streamlit run app.py
 ```
+
+### Auto-Updates
+
+The app auto-updates every time you launch via `LifeCoach.command`. No manual updates needed!
+
+| Developer | User |
+|-----------|------|
+| `git push` | Double-click `LifeCoach.command` |
+| Changes deployed | Gets latest version automatically |
 
 ## Usage
 
