@@ -1520,10 +1520,23 @@ with tab3:
             })
 
             with st.spinner("Session agent is processing..."):
-                response = invoke_agent(
-                    session_agent,
-                    st.session_state.messages_active
-                )
+                # Build minimal context for agent (not full chat history)
+                agent_context = []
+
+                # Add transcription if available
+                if st.session_state.loaded_transcription:
+                    agent_context.append({
+                        "role": "user",
+                        "content": f"[Session transcription]\n\n{st.session_state.loaded_transcription}"
+                    })
+
+                # Add current request only (not full history)
+                agent_context.append({
+                    "role": "user",
+                    "content": full_prompt
+                })
+
+                response = invoke_agent(session_agent, agent_context)
                 st.session_state.messages_active.append({
                     "role": "assistant",
                     "content": response
