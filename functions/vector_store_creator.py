@@ -11,6 +11,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.document_loaders import DirectoryLoader, Docx2txtLoader, PyMuPDFLoader
 from langchain_community.vectorstores import FAISS
 from pathlib import Path
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 coaching_training_path = Path("LifeCoach_Data/Coaching_Training")
@@ -30,13 +31,30 @@ pdf_loader = DirectoryLoader(
 docx_docs = docx_loader.load()
 pdf_docs = pdf_loader.load()
 
-all_document = docx_docs + pdf_docs
+all_documents = docx_docs + pdf_docs
 
-for i, doc in enumerate(docx_docs):
+""" for i, doc in enumerate(docx_docs):
     print(len(i))
 
 for i, doc in enumerate(pdf_docs):
-    print(len(i))
+    print(len(i)) """
+
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size = 1000,
+    chunk_overlap= 100,
+    separators=["\n\n", "\n", " ", ""]
+)
+
+chunks = text_splitter.split_documents(all_documents)
+
+for i, chunk in enumerate(chunks[:5]):  # First 5
+    print(f"\n--- Chunk {i+1} ---")
+    print(f"Source: {chunk.metadata['source']}")
+    print(f"Preview: {chunk.page_content[:200]}...")
+    print(f"Length: {len(chunk.page_content)} chars")
+
+# IDEA: create metadata of chunks by TOOL?
 
 
 #folder with all the documents.
