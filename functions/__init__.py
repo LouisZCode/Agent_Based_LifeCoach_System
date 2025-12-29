@@ -21,5 +21,7 @@ from .transcription_deepgram import (
 )
 from .document_orchestrator import create_document, detect_document_type
 
+from .vector_store_creator import vector_store_creation
+
 
 print("Function module loaded...")

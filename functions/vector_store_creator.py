@@ -7,7 +7,10 @@ You find here:
 vector_store_creation
 """
 
+# Run independently using: uv run python -m functions.vector_store_creator
+
 from langchain_huggingface import HuggingFaceEmbeddings
+from config import EMBEDDING_MODEL, VECTOR_STORE_PATH
 from langchain_community.document_loaders import DirectoryLoader, Docx2txtLoader, PyMuPDFLoader
 from langchain_community.vectorstores import FAISS
 from pathlib import Path
@@ -33,42 +36,39 @@ pdf_docs = pdf_loader.load()
 
 all_documents = docx_docs + pdf_docs
 
-""" for i, doc in enumerate(docx_docs):
-    print(len(i))
 
-for i, doc in enumerate(pdf_docs):
-    print(len(i)) """
+def vector_store_creation():
+    docx_loader = DirectoryLoader(
+        path=coaching_training_path,
+        glob="**/*.docx",
+        loader_cls=Docx2txtLoader
+    )
 
+    pdf_loader = DirectoryLoader(
+        path=coaching_training_path,
+        glob="**/*.pdf",
+        loader_cls=PyMuPDFLoader
+    )
 
-text_splitter = RecursiveCharacterTextSplitter(
+    docx_docs = docx_loader.load()
+    pdf_docs = pdf_loader.load()
+    all_documents = docx_docs + pdf_docs
+
+    text_splitter = RecursiveCharacterTextSplitter(
     chunk_size = 1000,
     chunk_overlap= 100,
     separators=["\n\n", "\n", " ", ""]
 )
 
-chunks = text_splitter.split_documents(all_documents)
+    chunks = text_splitter.split_documents(all_documents)
 
-for i, chunk in enumerate(chunks[:5]):  # First 5
-    print(f"\n--- Chunk {i+1} ---")
-    print(f"Source: {chunk.metadata['source']}")
-    print(f"Preview: {chunk.page_content[:200]}...")
-    print(f"Length: {len(chunk.page_content)} chars")
+    # IDEA: create metadata of chunks by TOOL?
 
-# IDEA: create metadata of chunks by TOOL?
+    embedding = HuggingFaceEmbeddings(model_name = EMBEDDING_MODEL)
 
+    vector_store = FAISS.from_documents(chunks, embedding)
+    vector_store.save_local(VECTOR_STORE_PATH)
+    print("Vector Store successfully created")
 
-#folder with all the documents.
-Path("LifeCoach_Data/Coaching_Training")
-
-#Read the documents
-    #if document is .docx
-        #convert to PDF
-
-
-
-
-def vector_store_creation():
-    pass
-
-vector_store_creation()
+#vector_store_creation()
 
