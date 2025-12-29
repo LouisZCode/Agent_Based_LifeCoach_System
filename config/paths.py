@@ -15,4 +15,4 @@ UNDEFINED_CLIENTS_PATH="LifeCoach_Data/Undefined"
 MODEL_PATH="model/nvidia_parakeet-v3_494MB"
 
 #Vector store path:
-VECTOR_STORE_PATH = Path("data/vector_store/Quarterly_Reports_DB")
+VECTOR_STORE_PATH = Path("vector_store/")
