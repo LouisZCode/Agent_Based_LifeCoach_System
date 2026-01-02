@@ -600,8 +600,8 @@ if "confirm_regenerate" not in st.session_state:
     st.session_state.confirm_regenerate = None
 
 # Tab 4: Chat Assistant
-if "messages_chat" not in st.session_state:
-    st.session_state.messages_chat = []
+if "messages_chat_ui" not in st.session_state:
+    st.session_state.messages_chat_ui = []
 
 
 # ============================================================================
@@ -1606,7 +1606,7 @@ with tab4:
     # Chat messages display
     chat_container = st.container(height=500)
     with chat_container:
-        for message in st.session_state.messages_chat:
+        for message in st.session_state.messages_chat_ui:
             with st.chat_message(message["role"]):
                 display_text = strip_context_tags(message["content"]) if message["role"] == "user" else message["content"]
                 st.markdown(display_text)
@@ -1616,7 +1616,7 @@ with tab4:
         "Ask about clients, progress, or coaching history...",
         key="chat_input"
     ):
-        st.session_state.messages_chat.append({
+        st.session_state.messages_chat_ui.append({
             "role": "user",
             "content": prompt
         })
@@ -1624,9 +1624,9 @@ with tab4:
         with st.spinner("Chat agent is thinking..."):
             response = invoke_agent(
                 life_coach_assistant_agent,
-                st.session_state.messages_chat
+                [{"role": "user", "content": prompt}]  # Only new message, not full history
             )
-            st.session_state.messages_chat.append({
+            st.session_state.messages_chat_ui.append({
                 "role": "assistant",
                 "content": response
             })
