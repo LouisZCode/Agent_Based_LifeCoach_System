@@ -5,6 +5,7 @@ To edit prompts, check the prompts.yaml document
 
 from functions import read_folder, read_template, save_initial_persona, retriever_tool, read_document
 from langchain.agents import create_agent
+from langgraph.checkpoint.memory import InMemorySaver
 import yaml
 from dotenv import load_dotenv
 import os
@@ -38,7 +39,8 @@ undefined_clients_agent = create_agent(
 life_coach_assistant_agent = create_agent(
     system_prompt=life_coach_assistant_prompt,
     model="openai:gpt-5-mini",
-    tools=[read_folder, retriever_tool, read_document]
+    tools=[read_folder, retriever_tool, read_document],
+    checkpointer=InMemorySaver()
 )
 
 #google_genai:gemini-2.5-flash

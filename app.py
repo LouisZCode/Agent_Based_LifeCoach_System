@@ -485,7 +485,7 @@ def strip_context_tags(text: str) -> str:
     return cleaned.strip()
 
 
-def invoke_agent(agent, messages: list, log_separator_enabled: bool = True) -> str:
+def invoke_agent(agent, messages: list, log_separator_enabled: bool = True, thread_id: str = "001") -> str:
     """Invoke an agent with the conversation history and return response"""
     from langchain_core.messages import AIMessage, HumanMessage
     from functions import log_separator
@@ -505,7 +505,7 @@ def invoke_agent(agent, messages: list, log_separator_enabled: bool = True) -> s
 
     response = agent.invoke(
         {"messages": lc_messages},
-        {"configurable": {"thread_id": "001"}}
+        {"configurable": {"thread_id": thread_id}}
     )
 
     # Handle LangChain message response format
@@ -602,6 +602,9 @@ if "confirm_regenerate" not in st.session_state:
 # Tab 4: Chat Assistant
 if "messages_chat_ui" not in st.session_state:
     st.session_state.messages_chat_ui = []
+if "chat_thread_id" not in st.session_state:
+    from datetime import datetime
+    st.session_state.chat_thread_id = f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
 
 # ============================================================================
@@ -1624,13 +1627,21 @@ with tab4:
         with st.spinner("Chat agent is thinking..."):
             response = invoke_agent(
                 life_coach_assistant_agent,
-                [{"role": "user", "content": prompt}]  # Only new message, not full history
+                [{"role": "user", "content": prompt}],  # Only new message, not full history
+                thread_id=st.session_state.chat_thread_id
             )
             st.session_state.messages_chat_ui.append({
                 "role": "assistant",
                 "content": response
             })
 
+        st.rerun()
+
+    # Button to start fresh conversation about a different client
+    if st.button("🔄 Talk about someone else...", key="new_chat_thread", use_container_width=True):
+        from datetime import datetime
+        st.session_state.messages_chat_ui = []
+        st.session_state.chat_thread_id = f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         st.rerun()
 
 
