@@ -417,51 +417,52 @@ def verify_document_draft(content: str, document_type: str, attempt: int = 1) ->
             return '\n'.join(results)
 
     elif document_type == "draft":
-        # (min, max) ranges for next session draft
-        limits = {
-            "total": (1500, 2500),
-            "title": (20, 60),
-            "greeting_checkin": (100, 250),
-            "homework_assessment": (150, 350),
-            "main_focus": (300, 500),
-            "suggested_tools": (100, 300),
-            "emerging_topics": (100, 250),
-            "next_steps": (100, 250),
-            "homework_next": (100, 200),
+        # New template structure: static content (~2008 chars) + dynamic sections
+        # Static content should not be modified by LLM
+        # Only dynamic sections (marked with specific content after instructions) are variable
+
+        EXPECTED_STATIC = 2008  # chars of coaching instructions
+        STATIC_TOLERANCE = 150  # allow small variations
+
+        # Dynamic section limits (min, max) - these are the LLM-filled parts
+        dynamic_limits = {
+            "previous_homework": (100, 200),
+            "suggested_concept": (150, 300),
+            "suggested_exercises": (150, 300),
+            "emerging_topics": (100, 200),
+            "next_steps": (150, 300),
+            "suggested_homework": (100, 200),
         }
 
-        # Parse sections
-        title = lines[0] if lines else ""
+        # Calculate expected total range
+        dynamic_min = sum(v[0] for v in dynamic_limits.values())  # ~750
+        dynamic_max = sum(v[1] for v in dynamic_limits.values())  # ~1500
+        total_min = EXPECTED_STATIC + dynamic_min - STATIC_TOLERANCE  # ~2608
+        total_max = EXPECTED_STATIC + dynamic_max + STATIC_TOLERANCE  # ~3658
 
-        sections = {}
-        current_section = None
-        current_content = []
-        section_markers = {
-            "Greeting / Check-In": "greeting_checkin",
-            "Homework Assessment": "homework_assessment",
-            "Main Focus": "main_focus",
-            "Suggested Tools": "suggested_tools",
-            "Emerging Topics": "emerging_topics",
-            "Next Steps": "next_steps",
-            "Homework for Next Session": "homework_next",
-        }
+        # Section markers to find dynamic content
+        # Dynamic content appears AFTER these markers (after the static instructions)
+        section_markers = [
+            ("3. Homework Assessment", "previous_homework", "4. Main Focus"),
+            ("4.1 Clarifying a Concept", "suggested_concept", "4.2 Practical"),
+            ("4.2 Practical Exercise", "suggested_exercises", "5. Emerging"),
+            ("5. Emerging Topics", "emerging_topics", "6. Wrap-Up"),
+            ("7. Next Steps", "next_steps", "8. Homework"),
+            ("8. Homework", "suggested_homework", "9. Final"),
+        ]
 
-        for line in lines[1:]:
-            line_stripped = line.strip()
-            matched = False
-            for marker, key in section_markers.items():
-                if line_stripped.startswith(marker):
-                    if current_section:
-                        sections[current_section] = '\n'.join(current_content).strip()
-                    current_section = key
-                    current_content = []
-                    matched = True
-                    break
-            if not matched and current_section:
-                current_content.append(line)
-
-        if current_section:
-            sections[current_section] = '\n'.join(current_content).strip()
+        # Parse dynamic sections
+        dynamic_sections = {}
+        for start_marker, key, end_marker in section_markers:
+            start_idx = content.find(start_marker)
+            end_idx = content.find(end_marker) if end_marker else len(content)
+            if start_idx != -1 and end_idx != -1:
+                section_content = content[start_idx:end_idx]
+                # Find the last paragraph (the dynamic part) after static instructions
+                paragraphs = [p.strip() for p in section_content.split('\n\n') if p.strip()]
+                if paragraphs:
+                    # The dynamic content is typically the last non-empty paragraph before next section
+                    dynamic_sections[key] = paragraphs[-1] if len(paragraphs) > 1 else ""
 
         # Build result
         results = []
@@ -479,40 +480,40 @@ def verify_document_draft(content: str, document_type: str, attempt: int = 1) ->
             return int(chars_to_remove * 1.1)
 
         # Total check
-        total_min, total_max = limits['total']
         total_status = check_range(total_chars, total_min, total_max)
         results.append(f"TOTAL: {total_chars} chars (target: {total_min}-{total_max}) {total_status}")
         if total_chars < total_min or total_chars > total_max:
             all_pass = False
 
-        # Title check
-        title_len = len(title)
-        title_min, title_max = limits['title']
-        title_status = check_range(title_len, title_min, title_max)
-        results.append(f"Title: {title_len} chars (target: {title_min}-{title_max}) {title_status}")
-        if title_len < title_min or title_len > title_max:
-            all_pass = False
-
-        # Section checks
-        section_keys = ["greeting_checkin", "homework_assessment", "main_focus", "suggested_tools", "emerging_topics", "next_steps", "homework_next"]
+        # Dynamic sections check
         section_names = {
-            "greeting_checkin": "Greeting/Check-In",
-            "homework_assessment": "Homework Assessment",
-            "main_focus": "Main Focus",
-            "suggested_tools": "Suggested Tools",
+            "previous_homework": "Previous Homework",
+            "suggested_concept": "Suggested Concept",
+            "suggested_exercises": "Suggested Exercises",
             "emerging_topics": "Emerging Topics",
             "next_steps": "Next Steps",
-            "homework_next": "Homework Next Session",
+            "suggested_homework": "Suggested Homework",
         }
-        for section_key in section_keys:
-            section_content = sections.get(section_key, "")
+
+        total_dynamic = 0
+        for key in dynamic_limits.keys():
+            section_content = dynamic_sections.get(key, "")
             section_len = len(section_content)
-            min_val, max_val = limits[section_key]
+            total_dynamic += section_len
+            min_val, max_val = dynamic_limits[key]
             status = check_range(section_len, min_val, max_val)
             passed = min_val <= section_len <= max_val
             if not passed:
                 all_pass = False
-            results.append(f"{section_names[section_key]}: {section_len} chars (target: {min_val}-{max_val}) {status}")
+            results.append(f"{section_names[key]}: {section_len} chars (target: {min_val}-{max_val}) {status}")
+
+        # Static content check (total - dynamic = static)
+        static_chars = total_chars - total_dynamic
+        static_status = check_range(static_chars, EXPECTED_STATIC - STATIC_TOLERANCE, EXPECTED_STATIC + STATIC_TOLERANCE)
+        results.append(f"Static Content: {static_chars} chars (expected: ~{EXPECTED_STATIC}) {static_status}")
+        if static_chars < EXPECTED_STATIC - STATIC_TOLERANCE or static_chars > EXPECTED_STATIC + STATIC_TOLERANCE:
+            all_pass = False
+            results.append("  ⚠ WARNING: Static coaching instructions may have been modified!")
 
         results.append("")
         if all_pass:
@@ -523,25 +524,19 @@ def verify_document_draft(content: str, document_type: str, attempt: int = 1) ->
             # Build specific edit instructions
             edit_instructions = []
 
-            total_min, total_max = limits['total']
             if total_chars < total_min:
                 edit_instructions.append(f"TOTAL: ADD {total_min - total_chars} chars overall")
             elif total_chars > total_max:
                 edit_instructions.append(f"TOTAL: REMOVE {overshoot(total_chars - total_max)} chars overall")
 
-            if title_len < limits['title'][0]:
-                edit_instructions.append(f"Title: ADD {limits['title'][0] - title_len} chars")
-            elif title_len > limits['title'][1]:
-                edit_instructions.append(f"Title: REMOVE {overshoot(title_len - limits['title'][1])} chars")
-
-            for section_key in section_keys:
-                section_content = sections.get(section_key, "")
+            for key in dynamic_limits.keys():
+                section_content = dynamic_sections.get(key, "")
                 section_len = len(section_content)
-                min_val, max_val = limits[section_key]
+                min_val, max_val = dynamic_limits[key]
                 if section_len < min_val:
-                    edit_instructions.append(f"{section_names[section_key]}: ADD {min_val - section_len} chars")
+                    edit_instructions.append(f"{section_names[key]}: ADD {min_val - section_len} chars")
                 elif section_len > max_val:
-                    edit_instructions.append(f"{section_names[section_key]}: REMOVE {overshoot(section_len - max_val)} chars")
+                    edit_instructions.append(f"{section_names[key]}: REMOVE {overshoot(section_len - max_val)} chars")
 
             # Return draft + edit instructions
             results.append("=== EDIT REQUIRED ===")
