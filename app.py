@@ -1472,9 +1472,13 @@ with tab3:
 
         # Disable buttons if no transcription
         buttons_disabled = st.session_state.loaded_transcription is None
+        # Next Session requires Summary AND Homework first
+        draft_disabled = buttons_disabled or not (summary_exists and homework_exists)
 
         if buttons_disabled:
             st.caption("Upload a transcription to enable document creation")
+        elif draft_disabled:
+            st.caption("Create Summary and Homework first to enable Next Session")
 
         col1, col2, col3 = st.columns(3)
 
@@ -1498,7 +1502,7 @@ with tab3:
 
         with col3:
             btn_label = "📅 Next Session ✓" if next_exists else "📅 Next Session"
-            if st.button(btn_label, key="btn_next", disabled=buttons_disabled, use_container_width=True):
+            if st.button(btn_label, key="btn_next", disabled=draft_disabled, use_container_width=True):
                 if next_exists:
                     st.session_state.confirm_regenerate = "draft"
                 else:
@@ -1549,15 +1553,29 @@ with tab3:
                 def invoke_fn(messages):
                     return invoke_agent(session_agent, messages, log_separator_enabled=False)
 
-                draft, status = create_document(
-                    invoke_fn=invoke_fn,
-                    transcription=st.session_state.loaded_transcription,
-                    doc_type=doc_type,
-                    session_path=session_path,
-                    client_name=selected_client,
-                    session_folder=session_folder,
-                    extra_instructions=extra
-                )
+                # For draft (Next Session), pass summary + homework instead of transcription
+                if doc_type == "draft":
+                    draft, status = create_document(
+                        invoke_fn=invoke_fn,
+                        transcription="",  # Not used for draft
+                        doc_type=doc_type,
+                        session_path=session_path,
+                        client_name=selected_client,
+                        session_folder=session_folder,
+                        extra_instructions=extra,
+                        summary=st.session_state.session_documents.get("summary", ""),
+                        homework=st.session_state.session_documents.get("homework", "")
+                    )
+                else:
+                    draft, status = create_document(
+                        invoke_fn=invoke_fn,
+                        transcription=st.session_state.loaded_transcription,
+                        doc_type=doc_type,
+                        session_path=session_path,
+                        client_name=selected_client,
+                        session_folder=session_folder,
+                        extra_instructions=extra
+                    )
 
                 if draft:
                     doc_key = "next_session" if doc_type == "draft" else doc_type

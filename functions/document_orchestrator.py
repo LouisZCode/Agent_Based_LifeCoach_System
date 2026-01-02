@@ -86,12 +86,15 @@ def detect_document_type(prompt: str) -> str | None:
 
 def create_document(invoke_fn, transcription: str, doc_type: str, session_path: str,
                     client_name: str = "", session_folder: str = "",
-                    extra_instructions: str = "") -> tuple[str | None, str]:
+                    extra_instructions: str = "",
+                    summary: str = "", homework: str = "") -> tuple[str | None, str]:
     """
     Orchestrate document creation with Python-side verification loop.
 
     Flow:
-    1. First invoke with transcription → get draft (~12k tokens)
+    1. First invoke with context → get draft
+       - Summary/Homework: uses transcription (~12k tokens)
+       - Draft (Next Session): uses summary + homework (~4k tokens)
     2. Python verifies draft (FREE - no LLM)
     3. If fails: new invoke with draft only (~2.5k tokens)
     4. Repeat until pass or max attempts
@@ -99,12 +102,14 @@ def create_document(invoke_fn, transcription: str, doc_type: str, session_path: 
 
     Args:
         invoke_fn: Function to call agent (takes message list, returns response)
-        transcription: Session transcription text
+        transcription: Session transcription text (used for summary/homework)
         doc_type: "summary", "homework", or "draft"
         session_path: Path to save document
         client_name: Optional client name for context
         session_folder: Optional session folder for context
         extra_instructions: Optional additional instructions from user
+        summary: Session summary content (used for draft only)
+        homework: Session homework content (used for draft only)
 
     Returns:
         (draft, status_message) tuple
@@ -116,14 +121,43 @@ def create_document(invoke_fn, transcription: str, doc_type: str, session_path: 
 
     # Log header
     log_doc_creation("HEADER", doc_type=doc_type, client=client_name, session=session_folder)
-    log_doc_creation("START", transcription=f"{len(transcription)} chars (~{len(transcription) // 4} tokens)")
 
-    # Step 1: Initial draft request (WITH transcription - only time we send it)
+    # Step 1: Initial draft request
     extra_section = ""
     if extra_instructions:
         extra_section = f"\n[Additional Instructions]\n{extra_instructions}\n"
 
-    initial_prompt = f"""[DRAFT_MODE] Create a {doc_type} for this session.
+    # Draft (Next Session) uses summary + homework instead of transcription
+    if doc_type == "draft" and summary and homework:
+        context_size = len(summary) + len(homework)
+        log_doc_creation("START", context=f"summary ({len(summary)} chars) + homework ({len(homework)} chars) = {context_size} chars (~{context_size // 4} tokens)")
+
+        initial_prompt = f"""[DRAFT_MODE] Create a next session guide for this client.
+
+Read the template at LifeCoach_Data/Templates/{template_name}
+Follow the template structure exactly:
+- Keep ALL static coaching instructions as written in the template
+- Only replace [DYNAMIC: ...] placeholders with client-specific content from the summary and homework below
+
+Return your draft wrapped in these markers:
+{DRAFT_START}
+(your draft here)
+{DRAFT_END}
+
+Do NOT call verify_document_draft or save tools - just return the draft.
+
+[Client: {client_name}] [Session: {session_folder}] [Session Path: {session_path}]
+{extra_section}
+[Session Summary]
+{summary}
+
+[Session Homework]
+{homework}"""
+    else:
+        # Summary and Homework use full transcription
+        log_doc_creation("START", transcription=f"{len(transcription)} chars (~{len(transcription) // 4} tokens)")
+
+        initial_prompt = f"""[DRAFT_MODE] Create a {doc_type} for this session.
 
 Read the template at LifeCoach_Data/Templates/{template_name}
 Follow the template structure and character limits exactly.
