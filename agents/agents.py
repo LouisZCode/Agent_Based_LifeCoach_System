@@ -3,7 +3,7 @@ Here you will find all the agents form create_agent, already with their prompts 
 To edit prompts, check the prompts.yaml document
 """
 
-from functions import read_folder, read_template, save_initial_persona, retriever_tool
+from functions import read_folder, read_template, save_initial_persona, retriever_tool, read_document
 from langchain.agents import create_agent
 import yaml
 from dotenv import load_dotenv
@@ -38,7 +38,7 @@ undefined_clients_agent = create_agent(
 life_coach_assistant_agent = create_agent(
     system_prompt=life_coach_assistant_prompt,
     model="openai:gpt-5-mini",
-    tools=[read_folder, retriever_tool]
+    tools=[read_folder, retriever_tool, read_document]
 )
 
 #google_genai:gemini-2.5-flash

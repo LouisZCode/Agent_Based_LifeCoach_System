@@ -21,6 +21,7 @@ from .transcription_deepgram import (
 )
 from .document_orchestrator import create_document, detect_document_type
 from .retriever_tool import retriever_tool
+from .agent_tools import read_document
 
 
 print("Function module loaded...")

@@ -26,18 +26,25 @@ def read_folder(path : str) -> str:
         path (str): this is the path where the folders you are searching for are.
 
     returns:
-        The exact and correct names of the clients
-
-    raises:
-        Error if the path is empty
-
+        The exact and correct names of the folders/clients, or an error message if path doesn't exist.
     """
+    # Auto-convert spaces to underscores (client names use underscores)
+    path = path.replace(" ", "_")
+
     log_tool_call("read_folder", {"path": path})
     active_path = Path(path)
-    clients = [folder.name for folder in active_path.iterdir() if folder.is_dir()]
-    log_tool_call("read_folder", {"path": path}, output=str(clients), status="success")
 
-    return clients
+    if not active_path.exists():
+        log_tool_call("read_folder", {"path": path}, output="Path not found", status="not_found")
+        return f"ERROR: Path '{path}' does not exist. Check the path and try again. Note: client names use underscores (e.g., 'Luis_Zermeno' not 'Luis Zermeno')."
+
+    try:
+        folders = [folder.name for folder in active_path.iterdir() if folder.is_dir()]
+        log_tool_call("read_folder", {"path": path}, output=str(folders), status="success")
+        return folders
+    except Exception as e:
+        log_tool_call("read_folder", {"path": path}, output=str(e), status="error")
+        return f"ERROR: Could not read folder '{path}': {str(e)}"
 
 @tool(
     "read_template",
@@ -74,34 +81,39 @@ def read_template(path : str, template_name : str) -> str:
 @tool(
     "read_document",
     parse_docstring=True,
-    description="reads the desired document in a specific clients folder"
+    description="reads a .txt document from a specific clients session folder"
 )
 def read_document(path : str, document_name : str) -> str:
     """
     Description:
-        Reads the document from the clients folder
+        Reads a .txt document from the clients session folder (summary.txt, homework.txt, next_session.txt)
 
     Args:
-        path (str): this is the path where the documents is.
+        path (str): this is the path where the document is.
         document_name (str): the desired document to read.
 
     returns:
-        The document content to understand the information inside it
-
-    raises:
-        Error if the document is not readable or does not exist
-
+        The document content, or an error message if the file does not exist.
     """
+    # Auto-convert spaces to underscores (client names use underscores)
+    path = path.replace(" ", "_")
+
     log_tool_call("read_document", {"path": path, "document_name": document_name})
     final_path = f"{path}/{document_name}"
-
     file_path = Path(final_path)
-    doc = Document(file_path)
 
-    text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
-    log_tool_call("read_document", {"document_name": document_name}, output=f"Loaded {len(text)} chars", status="success")
+    if not file_path.exists():
+        log_tool_call("read_document", {"document_name": document_name}, output="File not found", status="not_found")
+        return f"ERROR: Document '{document_name}' does not exist at path '{path}'. This session may not have this document yet."
 
-    return text
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        log_tool_call("read_document", {"document_name": document_name}, output=f"Loaded {len(text)} chars", status="success")
+        return text
+    except Exception as e:
+        log_tool_call("read_document", {"document_name": document_name}, output=str(e), status="error")
+        return f"ERROR: Could not read document '{document_name}': {str(e)}"
 
 @tool(
     "verify_document_draft",
